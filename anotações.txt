@@ -1,0 +1,2 @@
+Circular shift em c
+https://stackoverflow.com/questions/13289397/circular-shift-in-c

@@ -1,0 +1,82 @@
+Abrir arquivo de plaintext
+Abrir arquivo de chave
+Abrir arquivo de cifra
+
+Requerir se quer mostrar o trace
+
+Ler e validar a chave
+Definir se encriptação ou decriptação
+
+Se decriptação então {
+    DECRIPTACAO //inverter a ordem da chave e seguir o mesmo fluxo
+}
+
+
+Gerar subchave
+    Permutar a chave de acordo com a tabela PC1 deixando com tamanho de 56 bits
+    Quebrar a subchave em 2
+
+dentro de um while até que não exista mais texto{
+    Ler X caracteres do arquivo de plaintext
+    Se a leitura for menor que o tamanho do bloco, preencher com EOF
+    Permutar o bloco de plaintext com a tabela IP
+    Quebrar o bloco em dois (LN e RN)
+    Encriptar dentro de um for até 16{
+        Gerar SUBCHAVE de rodada
+
+        Se iteração 0 então{
+            LRodada = LN
+            RRodada = RN
+        }senão{
+            LRodada = LNPRodada
+            RRodada = RNPRodada
+        }
+        Xores = FuncaoF(RRodada, subchave, LRodada)
+        Xores = SBOXES(Xores)
+        Xores = PBOXES(Xores)
+
+        LNPRodada = RN (da rodada anterior)
+        RNPRodada = Xores
+    }
+    Juntar LRodada e RRodada
+    Resultado = Fazer a permutação final deles de acordo com a tabela IPINVERSA
+    Salvar o Resultado no arquivo de saída
+}
+
+
+FuncaoF{
+    Receber o RRodada da rodada
+    Receber a subchave
+    Receber LRodada
+    Expandir o RRodada de acordo com a tabela E BIT-SELECTION
+    ResultadoXor = Expansão XOR com RRodada
+    Retornar resultado
+}
+
+SUBCHAVE{
+    Fazer um SHIFT circular em cada parte de acordo com a rodada dada a tabela NUMBEROFLEFTSHIFTS
+    Juntar as duas partes da subchave
+    Permutar a subchave de acordo com a tabela PC2 (gerando assim a subchave da rodada)
+    Retornar a subchave
+}
+
+SBOXES(Xores_com_48_bits){
+    (cada sbox é diferente)
+    para cada bloco de 6 bits dos Xores
+        Isolar o conjunto de 6 bits requeridos
+        linha = isolar o 1 e o ultimo bit do bloco
+        coluna = isolar os bits do meio do conjunto de 6 bits
+        colocar na saída a combinação linhaXcoluna da tabela SBOX
+    Retornar o resultado com 32 bits
+}
+
+PBOXES(Xores){
+    Permutar os bits do Xores de acordo com a tabela P
+    Retornar o resultado de (32 bits)?
+}
+
+DECRIPTACAO{
+    Inverte a ordem da chave lida
+    //caractere a caractere ou bloco a cloco?
+    //para a decriptação, segue-se o mesmo fluxo da encriptação mas lendo a chave inversamente
+}
