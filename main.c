@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <time.h>
 
 #define NOMEARQUIVO 255
 #define TAMANHOBLOCO 8 //em bytes
@@ -123,7 +124,14 @@ int main() {
 }
 
 void validar_chave(char *key) {
-    //TODO: implementar a validação da chave
+    int tamanho_leitura = TAMANHOBLOCO+1;
+    for (int i = 0; i < TAMANHOBLOCO; i++) {
+        if (key[i] == '\0') //pegar a primeira referencia de \0 para saber até onde leu
+            tamanho_leitura = i;
+
+        if (i > tamanho_leitura) //da leitura em diante preencher com 0s
+            key[i] = '\0';
+    }
 }
 
 void decriptacao(char *key) {
