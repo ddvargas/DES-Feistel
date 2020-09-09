@@ -12,9 +12,10 @@
 
 //GLOBAL VARIABLES
 short int trace;
-const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35,
-                                         27, 19, 11, 3, 60, 52, 44, 36, 63, 55, 47, 39, 31, 23, 15, 7, 62, 54, 46, 38,
-                                         30, 22, 14, 6, 61, 53, 45, 37, 29, 21, 13, 5, 28, 20, 12, 4};
+const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1,  58, 50, 42, 34, 26, 18, 10, 2,
+                                         59, 51, 43, 35, 27, 19, 11, 3,  60, 52, 44, 36, 63, 55, 47, 39,
+                                         31, 23, 15, 7, 62, 54, 46, 38,  30, 22, 14, 6, 61, 53, 45, 37,
+                                         29, 21, 13, 5, 28, 20, 12, 4};
 
 
 //FUNTIONS
@@ -32,18 +33,18 @@ void decriptacao(char *key);
 void validar_chave(char *key);
 
 /**
- * Gera um subchave com a chave passada.
+ * Gera um subkey com a chave passada.
  * @param key Chave principal.
- * @return A subchave gerada.
+ * @param subchave Bloco de memória onde será copiada a subchave gerada.
  */
-char *subchave(char *key);
+void subkey(char *key, char *subchave);
 
 /**
  * Coloca a saída padrão a sequencia de bits que compõe o valor passado.
  * @param input Valor a ter os bits impressos.
- * @param size Tamanho dos dados a terem os bits impressos
+ * @param num_caracteres Tamanho dos dados a terem os bits impressos
  */
-void printbits(char *input, int size);
+void printbits(char *input, int num_caracteres);
 
 
 int main() {
@@ -53,8 +54,8 @@ int main() {
     FILE *fcifra;
     char nome_arquivo[NOMEARQUIVO];
     short int menu_principal;
-    char key[TAMANHOBLOCO+1];//+1 para o \0 de fim de string
-    char *subkey = NULL;
+    char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
+    char *subchave = NULL;
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -75,6 +76,7 @@ int main() {
             case 2:
                 printf("\nArquivo de cifra: ");
                 scanf("%s", nome_arquivo);
+                fflush(stdin);
                 fplaintext = fopen(strcat(nome_arquivo, ".txt"), "r");
                 if (fplaintext == NULL) {
                     printf("Erro ao abrir arquivo de chave, certifique-se de que seja um .txt e digite apenas o nome\n");
@@ -83,6 +85,7 @@ int main() {
 
                 printf("\nDefina o nome do arquivo de plaintext: ");
                 scanf("%s", nome_arquivo);
+                fflush(stdin);
                 fcifra = fopen(strcat(nome_arquivo, ".txt"), "w");
                 if (fcifra == NULL) {
                     printf("Erro ao criar arquivo de plaintext\n");
@@ -92,6 +95,7 @@ int main() {
             case 1:
                 printf("\nArquivo de plaintext: ");
                 scanf("%s", nome_arquivo);
+                fflush(stdin);
                 fplaintext = fopen(strcat(nome_arquivo, ".txt"), "r");
                 if (fplaintext == NULL) {
                     printf("Erro ao abrir arquivo de plaintext, certifique-se de que seja um .txt e digite apenas o nome\n");
@@ -125,7 +129,7 @@ int main() {
         //LEITURA E VALIDAÇÕES DA CHAVE
         if (trace)
             printf("INFO - Lendo e validando chave\n");
-        if (fgets(key, TAMANHOBLOCO+1, fkey) == NULL) {
+        if (fgets(key, TAMANHOBLOCO + 1, fkey) == NULL) {
             printf("ERRO - Erro na leitura da chave\n");
             exit(-1);
         }
@@ -139,14 +143,14 @@ int main() {
         if (menu_principal == 2)
             decriptacao(key);
 
-        //gerar subchave
+        //gerar subkey
         if (trace)
-            printf("INFO - Gerando subchave\n");
-        subkey = (char) malloc(sizeof(char)*TAMANHOBLOCO);
-        strcpy(subkey, subchave(key));
+            printf("INFO - Gerando subkey\n");
+        subchave = (char *) malloc(sizeof(char) * TAMANHOBLOCO);
+        subkey(key, subchave);
         if (trace) {
             printf("Subchave gerada: ");
-            printbits(&subkey, TAMANHOBLOCO);
+            printbits(&subchave, TAMANHOBLOCO-1);
         }
     } while (menu_principal != 0);
 
@@ -163,34 +167,63 @@ void validar_chave(char *key) {
     }
 }
 
-char *subchave(char *key) {
-    if (key == NULL) {
-        return NULL;
-    }
-    char *retorno = NULL;
-    char *aux = NULL;
-    retorno = (char *) realloc(retorno, TAMANHOBLOCO);
-    aux = (char *) realloc(aux, sizeof(char) * TAMANHOBLOCO);
+void subkey(char *key, char *subchave) {
+    if (key != NULL) {
+        int block_count = 0; //contador do bloco da subchave
+        char block_result = '\000'; //guarda o resultado do bloco que está sendo construído
+        int position; //guarda qual será o caractere acessado da key para extrair o bit requirido
+        char aux = NULL;
+        int shift;
+        int bit_position_block = 7;
 
-    for (int i = 0; i < 56; i++) {
-        *aux = *key << (TABELA_PC1[i] - 1);//fazer o shift para o bit que se quer que fique no bit mais significativo
-        *aux = *aux >> ((TAMANHOBLOCO * 8) - 1); //coloca o bit que se quer no bit menos significativo
-        *aux = *aux << ((TAMANHOBLOCO * 8) - 1 - i); //coloca o bit que se quer na respectiva posição do retorno
-        *retorno = *aux | *retorno; //concatenando o bit que se quer com os resultados anteriores
-    }
+        for (int i = 0; i < 56; i++) {
+            if (bit_position_block < 0){
+                subchave[block_count] = block_result;
+                block_count++;
+                bit_position_block = 7;
+                block_result = '\000';
+            }
+            //descobre qual o bloco/caractere da key será acessado
+            position = (int) (TABELA_PC1[i]-1) / 8;
+            printf("Caractere: (%c)", key[position]);
+            printbits(&key[position], 1);
+            printf("\n");
+            //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+            shift = TABELA_PC1[i] - (position * 8) - 1;
+            aux = (char) key[position] << shift; //faz o shift
+            printf("Aux <<: ");
+            printbits(&aux, 1);
+            printf("\n");
+            aux = aux >> 7; //coloca o bit desejado no bit menos significativo do byte
+            //até aqui isolei o bit que quero usar
+            printf("Aux >>: ");
+            printbits(&aux, 1);
+            printf("\n");
+            aux = aux << bit_position_block; //coloca o bit que se quer na respectiva posição do retorno
+            block_result = block_result | aux; //incorpora o bit isolado ao bloco
 
-//    retorno = realloc(retorno, TAMANHOBLOCO + 1);
-//    retorno[TAMANHOBLOCO + 1] = '\0';
-    return retorno;
+            printf("Block_result: ");
+            printbits(&block_result, 1);
+
+            bit_position_block--;
+        }
+
+        printf("SUBCHAVE: ");
+        printbits(&subchave, TAMANHOBLOCO);
+        printf("\n");
+
+//        subchave = (char*)realloc(subchave, (sizeof(char)*(TAMANHOBLOCO+1)));
+//        subchave[TAMANHOBLOCO + 1] = '\0';
+    }
 }
 
-void printbits(char *input, int size) {
+void printbits(char *input, int num_caracteres) {
     char aux = '\000';
 
-    for (int j = 0; j < size; j++) {
-        for (int i = size; i > 0; i--) {
-            aux = input[j] << (size-i);
-            aux = aux >> (size - 1);
+    for (int j = 0; j < num_caracteres; j++) {
+        for (int i = 8; i > 0; i--) {
+            aux = input[j] << (8 - i);
+            aux = aux >> 7;
 
             if (aux) {
                 printf("1");
