@@ -12,3 +12,7 @@ https://stackoverflow.com/questions/3536211/how-can-i-view-the-bits-of-a-byte-in
 Organização de bits little endian e big endian
 http://www.ic.uff.br/~simone/scminter/contaulas/3_BITS.pdf
 (O bit menos significativo possui o menor endereço)
+
+
+TABELA ASCII E BITS
+https://www.ime.usp.br/~kellyrb/mac2166_2015/tabela_ascii.html

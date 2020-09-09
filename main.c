@@ -42,9 +42,17 @@ void subkey(char *key, char *subchave);
 /**
  * Coloca a saída padrão a sequencia de bits que compõe o valor passado.
  * @param input Valor a ter os bits impressos.
- * @param num_caracteres Tamanho dos dados a terem os bits impressos
+ * @param num_caracteres Número de caracteres a terem os bits impressos
  */
 void printbits(char *input, int num_caracteres);
+
+/**
+ * Divide a chave em duas partes, colocando as nos endereços recebidos como parâmetro.
+ * @param key Chave a ser dividida em duas.
+ * @param part1 Endereço para armazenar a primeira parte da chave.
+ * @param part2 Endereço para armazenar a segunda parte da chave.
+ */
+void split_key(char *key, char *part1, char *part2);
 
 
 int main() {
@@ -56,6 +64,7 @@ int main() {
     short int menu_principal;
     char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
     char *subchave = NULL;
+    char *subchave1 = NULL, *subchave2 = NULL;
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -136,7 +145,7 @@ int main() {
         validar_chave(key);
         if (trace) {
             printf("Chave lida: (%s) ", key);
-            printbits(&key, TAMANHOBLOCO);
+            printbits(key, TAMANHOBLOCO);
             printf("\n");
         }
 
@@ -147,13 +156,55 @@ int main() {
         if (trace)
             printf("INFO - Gerando subkey\n");
         subchave = (char *) malloc(sizeof(char) * TAMANHOBLOCO);
+        subchave1 = (char *) malloc(sizeof(char) * 4);
+        subchave2 = (char *) malloc(sizeof(char) * 4);
         subkey(key, subchave);
+        split_key(subchave, subchave1, subchave2);
         if (trace) {
             printf("Subchave gerada: ");
             printbits(subchave, 7);
+            printf("\nQuebrando a chave em duas partes");
+            printf("\nParte 1: ");
+            printbits(subchave1, 4);
+            printf("\nParte 2: ");
+            printbits(subchave2, 4);
         }
+
     } while (menu_principal != 0);
 
+}
+
+void split_key(char *key, char *part1, char *part2) {
+    if (key == NULL || part1 == NULL || part2 == NULL) {
+        return;
+    }
+    char mask1 = 15 << 4; //máscara 11110000
+    char mask2 = 127 >> 3; //máscara 00001111
+    char aux;
+
+    for (int i = 0, j = 3; i < 8; i++) {
+        if (i < 4) {
+            //primeira parte
+            part1[i] = key[i];
+        } else {
+            //segunda parte da chave
+            part2[i-4] = key[j] & mask2;
+            part2[i-4] = part2[i-4] << 4;
+            if (j == 6)
+                aux = ((0 & mask1) >> 4) & mask2;
+            else
+                aux = ((key[j + 1] & mask1) >> 4) & mask2;
+            part2[i-4] = part2[i-4] | aux;
+            j++;
+        }
+    }
+    //ajustar para colocar 0s nos 4 últimos bits do ultimo byte
+    part1[3] = part1[3] & mask1;
+
+//    printf("Parte1: ");
+//    printbits(part1, 4);
+//    printf("\nParte2: ");
+//    printbits(part2, 4);
 }
 
 void validar_chave(char *key) {
@@ -172,7 +223,7 @@ void subkey(char *key, char *subchave) {
         int block_count = 0; //contador do bloco da subchave
         char block_result = '\000'; //guarda o resultado do bloco que está sendo construído
         int position; //guarda qual será o caractere acessado da key para extrair o bit requirido
-        char aux = NULL;
+        char aux;
         int shift; //
         int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
         char mask = 0x0001; //mascara para isolar o bit após o shift de 7 bits a direita onde é colocado 1 a frente
