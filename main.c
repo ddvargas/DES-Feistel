@@ -12,9 +12,9 @@
 
 //GLOBAL VARIABLES
 short int trace;
-const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1,  58, 50, 42, 34, 26, 18, 10, 2,
-                                         59, 51, 43, 35, 27, 19, 11, 3,  60, 52, 44, 36, 63, 55, 47, 39,
-                                         31, 23, 15, 7, 62, 54, 46, 38,  30, 22, 14, 6, 61, 53, 45, 37,
+const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2,
+                                         59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36, 63, 55, 47, 39,
+                                         31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37,
                                          29, 21, 13, 5, 28, 20, 12, 4};
 
 
@@ -150,7 +150,7 @@ int main() {
         subkey(key, subchave);
         if (trace) {
             printf("Subchave gerada: ");
-            printbits(&subchave, TAMANHOBLOCO-1);
+            printbits(subchave, 7);
         }
     } while (menu_principal != 0);
 
@@ -173,47 +173,34 @@ void subkey(char *key, char *subchave) {
         char block_result = '\000'; //guarda o resultado do bloco que está sendo construído
         int position; //guarda qual será o caractere acessado da key para extrair o bit requirido
         char aux = NULL;
-        int shift;
-        int bit_position_block = 7;
+        int shift; //
+        int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
+        char mask = 0x0001; //mascara para isolar o bit após o shift de 7 bits a direita onde é colocado 1 a frente
 
         for (int i = 0; i < 56; i++) {
-            if (bit_position_block < 0){
+            //descobre qual o bloco/caractere da key será acessado
+            position = (int) (TABELA_PC1[i] - 1) / 8;
+            //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+            shift = TABELA_PC1[i] - (position * 8) - 1;
+            aux = (char) key[position] << shift; //faz o shift
+            aux = aux >> 7; //coloca o bit desejado no bit menos significativo do byte
+            aux = aux & mask;
+            //até aqui isolei o bit que quero usar
+            aux = aux << bit_position_block; //coloca o bit que se quer na respectiva posição do retorno
+            block_result = block_result | aux; //incorpora o bit isolado ao bloco
+//
+//            printf("Block_result: ");
+//            printbits(&block_result, 1);
+//            printf("\n");
+
+            bit_position_block--;
+            if (bit_position_block < 0) {
                 subchave[block_count] = block_result;
                 block_count++;
                 bit_position_block = 7;
                 block_result = '\000';
             }
-            //descobre qual o bloco/caractere da key será acessado
-            position = (int) (TABELA_PC1[i]-1) / 8;
-            printf("Caractere: (%c)", key[position]);
-            printbits(&key[position], 1);
-            printf("\n");
-            //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
-            shift = TABELA_PC1[i] - (position * 8) - 1;
-            aux = (char) key[position] << shift; //faz o shift
-            printf("Aux <<: ");
-            printbits(&aux, 1);
-            printf("\n");
-            aux = aux >> 7; //coloca o bit desejado no bit menos significativo do byte
-            //até aqui isolei o bit que quero usar
-            printf("Aux >>: ");
-            printbits(&aux, 1);
-            printf("\n");
-            aux = aux << bit_position_block; //coloca o bit que se quer na respectiva posição do retorno
-            block_result = block_result | aux; //incorpora o bit isolado ao bloco
-
-            printf("Block_result: ");
-            printbits(&block_result, 1);
-
-            bit_position_block--;
         }
-
-        printf("SUBCHAVE: ");
-        printbits(&subchave, TAMANHOBLOCO);
-        printf("\n");
-
-//        subchave = (char*)realloc(subchave, (sizeof(char)*(TAMANHOBLOCO+1)));
-//        subchave[TAMANHOBLOCO + 1] = '\0';
     }
 }
 

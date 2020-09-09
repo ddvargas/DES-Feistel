@@ -57,7 +57,7 @@ SUBCHAVE{
     Fazer um SHIFT circular em cada parte de acordo com a rodada dada a tabela NUMBEROFLEFTSHIFTS
     Juntar as duas partes da subchave
     Permutar a subchave de acordo com a tabela PC2 (gerando assim a subchave da rodada)
-    Retornar a subchave
+    Retornar a subkey
 }
 
 SBOXES(Xores_com_48_bits){

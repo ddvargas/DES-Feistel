@@ -1,2 +1,14 @@
 Circular shift em c
 https://stackoverflow.com/questions/13289397/circular-shift-in-c
+
+REPOSITÓRIOS
+https://github.com/SergeyBel/Cipher/blob/master/cip.c
+
+
+Printar bits
+https://stackoverflow.com/questions/3536211/how-can-i-view-the-bits-of-a-byte-in-c
+
+
+Organização de bits little endian e big endian
+http://www.ic.uff.br/~simone/scminter/contaulas/3_BITS.pdf
+(O bit menos significativo possui o menor endereço)
