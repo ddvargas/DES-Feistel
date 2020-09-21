@@ -18,6 +18,11 @@ const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 4
                                          31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37,
                                          29, 21, 13, 5, 28, 20, 12, 4};
 
+const unsigned  short int TABELA_IP[] = {58, 50, 42, 34, 26, 18, 10, 2,  60, 52, 44, 36, 28, 20, 12, 4,
+                                         62, 54, 46, 38, 30, 22, 14, 6,  64, 56, 48, 40, 32, 24, 16, 8,
+                                         57, 49, 41, 33, 25, 17, 9, 1,  59, 51, 43, 35, 27, 19, 11, 3,
+                                         61, 53, 45, 37, 29, 21, 13, 5,  63, 55, 47, 39, 31, 23, 15, 7};
+
 
 //FUNTIONS
 
@@ -64,6 +69,14 @@ void split_key(char *key, char *part1, char *part2);
  */
 bool read_file(FILE *file, char *buffer, int buffer_size);
 
+/**
+ * Faz a permutação dos bits do bloco passado, de acordo com a tabela IP.
+ * @param bloco endereço do bloco lido.
+ * @param block_size Numero de caracteres do bloco.
+ * @return O endereço do bloco permutado.
+ */
+char* PBox(char* bloco, int block_size);
+
 
 int main() {
     setlocale(LC_ALL, "");
@@ -75,7 +88,8 @@ int main() {
     char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
     char *subchave = NULL;
     char *subchave1 = NULL, *subchave2 = NULL;
-    char plaintext[TAMANHOBLOCO+1]; //armazena um fragmento de texto a ser encriptado
+    char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
+    char* permuted_plaintext;
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -183,10 +197,55 @@ int main() {
         //LER ARQUIVO A SER ENCRIPTADO
         while (read_file(fplaintext, plaintext, TAMANHOBLOCO)){
             //TODO: encriptar
-            printf("Lido: %s\n", plaintext);
+            permuted_plaintext = PBox(plaintext, TAMANHOBLOCO);
+            if (trace){
+                printf("Plaintext: %s", plaintext);
+                printbits(plaintext, 8);
+                printf("PermutedPlaintext: ");
+                printbits(permuted_plaintext, 8);
+            }
         }
     } while (menu_principal != 0);
 
+}
+
+char* PBox(char* bloco, int block_size){
+    if (bloco == NULL || block_size < 0){
+        return NULL;
+    }
+
+    char* bloco_permutado = malloc(sizeof(char) * block_size);
+    int position;//descobre qual o caractere do bloco será acessado
+    int shift; //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+    char aux;
+    char block_result = '\000'; //guarda o resultado do byte que está sendo construído
+    char mask = 0x0001; //máscara para isolar o bit menos significativo do byte, pois após shift a direita, se tiver 1 ele é replicado
+    int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
+    int byte_count = 0;
+
+    for (int i = 0; i < 64; i++) {
+        position = (int) (TABELA_IP[i]-1) / 8;
+        shift = TABELA_IP[i] - (position*8)-1;
+        aux = bloco[position] << shift;
+        aux = aux >> 7; //coloca o bit desejado na posição menos significativa do byte
+        aux = aux & mask;
+
+        //ate aqui, isolei o bit que quero usar
+        aux = aux << bit_position_block;
+        block_result = block_result | aux;
+
+//        printf("Block_result: ");
+//        printbits(&block_result, 1);
+
+        bit_position_block--;
+        if (bit_position_block < 0){
+            bloco_permutado[byte_count] = block_result;
+            byte_count++;
+            bit_position_block = 7;
+            block_result = '\000';
+        }
+    }
+    return bloco_permutado;
 }
 
 bool read_file(FILE *file, char *buffer, int buffer_size){
