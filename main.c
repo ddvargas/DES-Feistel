@@ -10,6 +10,7 @@
 
 #define NOMEARQUIVO 255
 #define TAMANHOBLOCO 8 //em bytes
+#define NUM_RODADAS 16
 
 //GLOBAL VARIABLES
 short int trace;
@@ -90,6 +91,7 @@ int main() {
     char *subchave1 = NULL, *subchave2 = NULL;
     char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
     char* permuted_plaintext;
+    char LN[2], RN[2];
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -204,6 +206,16 @@ int main() {
                 printf("PermutedPlaintext: ");
                 printbits(permuted_plaintext, 8);
             }
+            //quebrar o bloco em 2
+            LN[0] = permuted_plaintext[0];
+            LN[1] = permuted_plaintext[1];
+            RN[0] = permuted_plaintext[2];
+            RN[1] = permuted_plaintext[3];
+
+            for (int i = 0; i <NUM_RODADAS; i++){
+
+            }
+
         }
     } while (menu_principal != 0);
 
