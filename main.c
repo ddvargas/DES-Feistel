@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <stdbool.h>
 
 #define NOMEARQUIVO 255
 #define TAMANHOBLOCO 8 //em bytes
@@ -54,6 +55,15 @@ void printbits(char *input, int num_caracteres);
  */
 void split_key(char *key, char *part1, char *part2);
 
+/**
+ * Faz a leitura e validação de caracteres do arquivo, colocando os caracteres válidos no buffer.
+ * @param file Arquivo que se quer ler.
+ * @param buffer Variável para armazenamento dos caracteres válidos.
+ * @param buffer_size Tamanho, em caracteres, do buffer.
+ * @return True se foram lidos caracteres do arquivo ou false se chegou ao fim do arquivo.
+ */
+bool read_file(FILE *file, char *buffer, int buffer_size);
+
 
 int main() {
     setlocale(LC_ALL, "");
@@ -65,6 +75,7 @@ int main() {
     char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
     char *subchave = NULL;
     char *subchave1 = NULL, *subchave2 = NULL;
+    char plaintext[TAMANHOBLOCO+1]; //armazena um fragmento de texto a ser encriptado
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -146,7 +157,6 @@ int main() {
         if (trace) {
             printf("Chave lida: (%s) ", key);
             printbits(key, TAMANHOBLOCO);
-            printf("\n");
         }
 
         if (menu_principal == 2)
@@ -163,15 +173,42 @@ int main() {
         if (trace) {
             printf("Subchave gerada: ");
             printbits(subchave, 7);
-            printf("\nQuebrando a chave em duas partes");
-            printf("\nParte 1: ");
+            printf("Quebrando a chave em duas partes\n");
+            printf("Parte 1: ");
             printbits(subchave1, 4);
-            printf("\nParte 2: ");
+            printf("Parte 2: ");
             printbits(subchave2, 4);
         }
 
+        //LER ARQUIVO A SER ENCRIPTADO
+        while (read_file(fplaintext, plaintext, TAMANHOBLOCO)){
+            //TODO: encriptar
+            printf("Lido: %s\n", plaintext);
+        }
     } while (menu_principal != 0);
 
+}
+
+bool read_file(FILE *file, char *buffer, int buffer_size){
+    if (file == NULL || buffer == NULL || buffer_size < 1){
+        return false;
+    }
+
+    if (!feof(file)){
+        char c;
+
+        for (int i = 0; i < buffer_size; ++i) {
+            c = fgetc(file);
+            if (c > 0){
+                buffer[i] = c;
+            } else{
+                buffer[i] = NULL;
+            }
+        }
+        return true;
+    } else{
+        return false;
+    }
 }
 
 void split_key(char *key, char *part1, char *part2) {
@@ -242,7 +279,6 @@ void subkey(char *key, char *subchave) {
 //
 //            printf("Block_result: ");
 //            printbits(&block_result, 1);
-//            printf("\n");
 
             bit_position_block--;
             if (bit_position_block < 0) {
@@ -271,6 +307,7 @@ void printbits(char *input, int num_caracteres) {
         }
         printf(" ");
     }
+    printf("\n");
 }
 
 void decriptacao(char *key) {
