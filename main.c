@@ -19,10 +19,16 @@ const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 4
                                          31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37,
                                          29, 21, 13, 5, 28, 20, 12, 4};
 
-const unsigned  short int TABELA_IP[] = {58, 50, 42, 34, 26, 18, 10, 2,  60, 52, 44, 36, 28, 20, 12, 4,
-                                         62, 54, 46, 38, 30, 22, 14, 6,  64, 56, 48, 40, 32, 24, 16, 8,
-                                         57, 49, 41, 33, 25, 17, 9, 1,  59, 51, 43, 35, 27, 19, 11, 3,
-                                         61, 53, 45, 37, 29, 21, 13, 5,  63, 55, 47, 39, 31, 23, 15, 7};
+const unsigned short int TABELA_IP[] = {58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4,
+                                        62, 54, 46, 38, 30, 22, 14, 6, 64, 56, 48, 40, 32, 24, 16, 8,
+                                        57, 49, 41, 33, 25, 17, 9, 1, 59, 51, 43, 35, 27, 19, 11, 3,
+                                        61, 53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7};
+
+const unsigned short int LEFT_SHIFT[] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
+
+const unsigned short int TABELA_PC2[] = {14, 17, 11, 24, 1, 5, 3, 28,  15, 6, 21, 10, 23, 19, 12, 4,
+                                         26, 8, 16, 7, 27, 20, 13, 2,  41, 52, 31, 37, 47, 55, 30, 40,
+                                         51, 45, 33, 48, 44, 49, 39, 56,  34, 53, 46, 42, 50, 36, 29, 32};
 
 
 //FUNTIONS
@@ -76,7 +82,25 @@ bool read_file(FILE *file, char *buffer, int buffer_size);
  * @param block_size Numero de caracteres do bloco.
  * @return O endereço do bloco permutado.
  */
-char* PBox(char* bloco, int block_size);
+char *PBox(char *bloco, int block_size);
+
+/**
+ * Gera a subchave de rodada. Realizando a junção, shifts circulares e permutação da chave.
+ * @param subkey_part1 Parte 1 da chave.
+ * @param subkey_part2 Parte 2 da chave.
+ * @param key_round Onde a chave gerada será armazenada.
+ * @param round Número da rodada que será gerada a subchave.
+ * @return Endereço da subchave gerada.
+ */
+char *round_key(char *subkey_part1, char *subkey_part2, int round);
+
+/**
+ * Realiza a união dos bits das partes da subkey.
+ * @param part1 Endereço do vetor com a parte 1 da subkey.
+ * @param part2 Endereço do vetor com a parte 2 da subkey.
+ * @param subkey Endereço para salvar a subkey unida.
+ */
+void union_subkey(char *part1, char *part2, char *subkey);
 
 
 int main() {
@@ -89,8 +113,9 @@ int main() {
     char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
     char *subchave = NULL;
     char *subchave1 = NULL, *subchave2 = NULL;
+    char *roundkey;
     char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
-    char* permuted_plaintext;
+    char *permuted_plaintext;
     char LN[2], RN[2];
 
 
@@ -197,11 +222,11 @@ int main() {
         }
 
         //LER ARQUIVO A SER ENCRIPTADO
-        while (read_file(fplaintext, plaintext, TAMANHOBLOCO)){
+        while (read_file(fplaintext, plaintext, TAMANHOBLOCO)) {
             //TODO: encriptar
             permuted_plaintext = PBox(plaintext, TAMANHOBLOCO);
-            if (trace){
-                printf("Plaintext: %s", plaintext);
+            if (trace) {
+                printf("Plaintext: (%s) ", plaintext);
                 printbits(plaintext, 8);
                 printf("PermutedPlaintext: ");
                 printbits(permuted_plaintext, 8);
@@ -212,8 +237,14 @@ int main() {
             RN[0] = permuted_plaintext[2];
             RN[1] = permuted_plaintext[3];
 
-            for (int i = 0; i <NUM_RODADAS; i++){
 
+            for (int i = 0; i < NUM_RODADAS; i++) {
+                //gerar subchave de rodada
+                roundkey = round_key(subchave1, subchave2, i);
+                printf("Subchave recebida no main: ");
+                printbits(roundkey, 6);
+
+                free(roundkey);
             }
 
         }
@@ -221,12 +252,107 @@ int main() {
 
 }
 
-char* PBox(char* bloco, int block_size){
-    if (bloco == NULL || block_size < 0){
+char *round_key(char *subkey_part1, char *subkey_part2, int round) {
+    if (subkey_part1 == NULL || subkey_part2 == NULL || round < 0 || round > NUM_RODADAS) {
+        return NULL;
+    }
+    char key_aux[7];
+    char *key_round = (char*) malloc(sizeof(char) * 6);
+    int position;//descobre qual o caractere do bloco será acessado
+    int shift; //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+    char aux;
+    char block_result = '\000'; //guarda o resultado do byte que está sendo construído
+    int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
+    int byte_count = 0;
+    char mask; //máscara para isolar os bits que seriam perdidos com o shift à esquerda
+    char mask_d;//mascara para tirar as replicações de 1s quando shift à direita
+    char ultimo; //guarda os bits iniciais perdidos após o shift à esquerda
+
+    mask = LEFT_SHIFT[round] == 2 ? 0b11000000 : 0b10000000; //formar a máscara
+    mask_d = LEFT_SHIFT[round] == 2 ? 0b00000011 : 0b00000001; //formar a máscara
+    shift = LEFT_SHIFT[round] == 2 ? 6 : 7;
+
+    //shift circular na parte 1
+    for (int i = 0; i < 4; ++i) {
+        if (i == 0)
+            ultimo = subkey_part1[0] & mask;
+        if (i != 3) {
+            aux = ((subkey_part1[i + 1] & mask) >> shift) & mask_d;
+        } else {
+            aux = (ultimo >> (shift - 4)) & mask_d;
+        }
+        subkey_part1[i] = subkey_part1[i] << LEFT_SHIFT[round];
+        subkey_part1[i] = subkey_part1[i] | aux;
+    }
+    //shift circular na parte 2
+    for (int i = 0; i < 4; ++i) {
+        if (i == 0)
+            ultimo = subkey_part2[0] & mask;
+        if (i != 3) {
+            aux = ((subkey_part2[i + 1] & mask) >> shift) & mask_d;
+        } else {
+            aux = (ultimo >> (shift - 4)) & mask_d;
+        }
+        subkey_part2[i] = subkey_part2[i] << LEFT_SHIFT[round];
+        subkey_part2[i] = subkey_part2[i] | aux;
+    }
+
+    //unir as duas partes
+    union_subkey(subkey_part1, subkey_part2, key_aux);
+    //fazer permutação com tabela PC 2
+    mask = 0b00000001;
+    for (int i = 0; i < 56; i++) {
+        position = (int) (TABELA_PC2[i] - 1) / 8;
+        //calcula a quantidade de shifts a esquersa será necessário para isolar o bit desejado
+        shift = TABELA_PC2[i] - (position * 8) - 1;
+        aux = (char) key_aux[position] << shift;
+        aux >>= 7;
+        aux = aux & mask;
+        //até aqui isolei o bit que quero usar
+        aux = aux << bit_position_block;
+        block_result = block_result | aux;
+
+        bit_position_block--;
+        if (bit_position_block < 0) {
+            key_round[byte_count] = block_result;
+            byte_count++;
+            bit_position_block = 7;
+            block_result = '\000';
+        }
+    }
+    if (trace) {
+        printf("\n\nCircular shift nas partes da subchave (rodada %d)\n", round);
+        printf("Parte 1 da subchave após o shift circular (ignorar últimos 4 bits): ");
+        printbits(subkey_part1, 4);
+        printf("Parte 2 da subchave após o shift circular (ignorar os últimos 4 bits): ");
+        printbits(subkey_part2, 4);
+        printf("Subchave de rodada (%d): ", round);
+        printbits(key_round, 6);
+    }
+    return key_round;
+}
+
+void union_subkey(char *part1, char *part2, char *subkey) {
+    if (part1 != NULL || part2 != NULL || subkey != NULL) {
+        char mask = 0b11110000;
+        char mask2 = 0b00001111;
+
+        subkey[0] = part1[0];
+        subkey[1] = part1[1];
+        subkey[2] = part1[2];
+        subkey[3] = part1[3] | ((part2[0] >> 4) & mask2);
+        subkey[4] = (((part2[1] & mask) >> 4) & mask2) | (part2[0] << 4);
+        subkey[5] = (((part2[2] & mask) >> 4) & mask2) | (part2[1] << 4);
+        subkey[6] = ((part2[3] >> 4) & mask2) | (part2[2] << 4);
+    }
+}
+
+char *PBox(char *bloco, int block_size) {
+    if (bloco == NULL || block_size < 0) {
         return NULL;
     }
 
-    char* bloco_permutado = malloc(sizeof(char) * block_size);
+    char *bloco_permutado = malloc(sizeof(char) * block_size);
     int position;//descobre qual o caractere do bloco será acessado
     int shift; //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
     char aux;
@@ -236,8 +362,8 @@ char* PBox(char* bloco, int block_size){
     int byte_count = 0;
 
     for (int i = 0; i < 64; i++) {
-        position = (int) (TABELA_IP[i]-1) / 8;
-        shift = TABELA_IP[i] - (position*8)-1;
+        position = (int) (TABELA_IP[i] - 1) / 8;
+        shift = TABELA_IP[i] - (position * 8) - 1;
         aux = bloco[position] << shift;
         aux = aux >> 7; //coloca o bit desejado na posição menos significativa do byte
         aux = aux & mask;
@@ -250,7 +376,7 @@ char* PBox(char* bloco, int block_size){
 //        printbits(&block_result, 1);
 
         bit_position_block--;
-        if (bit_position_block < 0){
+        if (bit_position_block < 0) {
             bloco_permutado[byte_count] = block_result;
             byte_count++;
             bit_position_block = 7;
@@ -260,24 +386,24 @@ char* PBox(char* bloco, int block_size){
     return bloco_permutado;
 }
 
-bool read_file(FILE *file, char *buffer, int buffer_size){
-    if (file == NULL || buffer == NULL || buffer_size < 1){
+bool read_file(FILE *file, char *buffer, int buffer_size) {
+    if (file == NULL || buffer == NULL || buffer_size < 1) {
         return false;
     }
 
-    if (!feof(file)){
+    if (!feof(file)) {
         char c;
 
         for (int i = 0; i < buffer_size; ++i) {
             c = fgetc(file);
-            if (c > 0){
+            if (c > 0) {
                 buffer[i] = c;
-            } else{
+            } else {
                 buffer[i] = NULL;
             }
         }
         return true;
-    } else{
+    } else {
         return false;
     }
 }
@@ -296,13 +422,13 @@ void split_key(char *key, char *part1, char *part2) {
             part1[i] = key[i];
         } else {
             //segunda parte da chave
-            part2[i-4] = key[j] & mask2;
-            part2[i-4] = part2[i-4] << 4;
+            part2[i - 4] = key[j] & mask2;
+            part2[i - 4] = part2[i - 4] << 4;
             if (j == 6)
                 aux = ((0 & mask1) >> 4) & mask2;
             else
                 aux = ((key[j + 1] & mask1) >> 4) & mask2;
-            part2[i-4] = part2[i-4] | aux;
+            part2[i - 4] = part2[i - 4] | aux;
             j++;
         }
     }
