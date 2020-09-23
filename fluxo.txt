@@ -31,12 +31,8 @@ dentro de um while até que não exista mais texto{
             LRodada = LNPRodada
             RRodada = RNPRodada
         }
-        Xores = FuncaoF(RRodada, subchave, LRodada)
-        Xores = SBOXES(Xores)
-        Xores = PBOXES(Xores)
-
-        LNPRodada = RN (da rodada anterior)
-        RNPRodada = Xores
+        LNPRodada = RRodada
+        RNPRodada = LRodada ^ FuncaoF(RRodada, subchave)
     }
     Juntar LRodada e RRodada
     Resultado = Fazer a permutação final deles de acordo com a tabela IPINVERSA
@@ -47,9 +43,10 @@ dentro de um while até que não exista mais texto{
 FuncaoF{
     Receber o RRodada da rodada
     Receber a subchave
-    Receber LRodada
     Expandir o RRodada de acordo com a tabela E BIT-SELECTION
-    ResultadoXor = Expansão XOR com RRodada
+    ResultadoXor(48bits) = Expansão XOR com subchave
+    Passar ResultadoXor nas Sboxes (existem 8 diferentes)
+    Passar ResultadoXor na PBOX(entram 32bits)
     Retornar resultado
 }
 
@@ -70,7 +67,7 @@ SBOXES(Xores_com_48_bits){
     Retornar o resultado com 32 bits
 }
 
-PBOXES(Xores){
+PBOX(Xores){
     Permutar os bits do Xores de acordo com a tabela P
     Retornar o resultado de (32 bits)?
 }

@@ -26,10 +26,53 @@ const unsigned short int TABELA_IP[] = {58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 4
 
 const unsigned short int LEFT_SHIFT[] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
 
-const unsigned short int TABELA_PC2[] = {14, 17, 11, 24, 1, 5, 3, 28,  15, 6, 21, 10, 23, 19, 12, 4,
-                                         26, 8, 16, 7, 27, 20, 13, 2,  41, 52, 31, 37, 47, 55, 30, 40,
-                                         51, 45, 33, 48, 44, 49, 39, 56,  34, 53, 46, 42, 50, 36, 29, 32};
+const unsigned short int TABELA_PC2[] = {14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4,
+                                         26, 8, 16, 7, 27, 20, 13, 2, 41, 52, 31, 37, 47, 55, 30, 40,
+                                         51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32};
 
+const unsigned short int EBITSELECTION[] = {32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9, 8, 9, 10, 11,
+                                            12, 13, 12, 13, 14, 15, 16, 17, 16, 17, 18, 19, 20, 21, 20, 21,
+                                            22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1};
+
+const unsigned short int SBOX1[4][16] = {14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
+                                         0, 15, 7, 3, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
+                                         4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 13, 10, 5, 0,
+                                         15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13};
+
+const unsigned short int SBOX2[4][16] = {15, 1, 8, 14, 6, 11, 3, 4, 9, 7, 2, 13, 12, 0, 5, 10,
+                                         3, 13, 4, 7, 15, 2, 8, 14, 12, 0, 1, 10, 6, 9, 11, 5,
+                                         0, 14, 7, 11, 10, 4, 13, 1, 5, 8, 12, 6, 9, 3, 2, 15,
+                                         13, 8, 10, 1, 3, 15, 4, 2, 11, 6, 7, 12, 0, 5, 14, 9};
+
+const unsigned short int SBOX3[4][16] = {10, 0, 9, 14, 6, 3, 15, 5, 1, 13, 12, 7, 11, 4, 2, 8,
+                                         13, 7, 0, 9, 3, 4, 6, 10, 2, 8, 5, 14, 12, 11, 15, 1,
+                                         13, 6, 4, 9, 8, 15, 3, 0, 11, 1, 2, 12, 5, 10, 14, 7,
+                                         1, 10, 13, 0, 6, 9, 8, 7, 4, 15, 14, 3, 11, 5, 2, 12};
+
+const unsigned short int SBOX4[4][16] = {7, 13, 14, 3, 0, 6, 9, 10, 1, 2, 8, 5, 11, 12, 4, 15,
+                                         13, 8, 11, 5, 6, 15, 0, 3, 4, 7, 2, 12, 1, 10, 14, 9,
+                                         10, 6, 9, 0, 12, 11, 7, 13, 15, 1, 3, 14, 5, 2, 8, 4,
+                                         3, 15, 0, 6, 10, 1, 13, 8, 9, 4, 5, 11, 12, 7, 2, 14};
+
+const unsigned short int SBOX5[4][16] = {2, 12, 4, 1, 7, 10, 11, 6, 8, 5, 3, 15, 13, 0, 14, 9,
+                                         14, 11, 2, 12, 4, 7, 13, 1, 5, 0, 15, 10, 3, 9, 8, 6,
+                                         4, 2, 1, 11, 10, 13, 7, 8, 15, 9, 12, 5, 6, 3, 0, 14,
+                                         11, 8, 12, 7, 1, 14, 2, 13, 6, 15, 0, 9, 10, 4, 5, 3};
+
+const unsigned short int SBOX6[4][16] = {12, 1, 10, 15, 9, 2, 6, 8, 0, 13, 3, 4, 14, 7, 5, 11,
+                                         10, 15, 4, 2, 7, 12, 9, 5, 6, 1, 13, 14, 0, 11, 3, 8,
+                                         9, 14, 15, 5, 2, 8, 12, 3, 7, 0, 4, 10, 1, 13, 11, 6,
+                                         4, 3, 2, 12, 9, 5, 15, 10, 11, 14, 1, 7, 6, 0, 8, 13};
+
+const unsigned short int SBOX7[4][16] = {4, 11, 2, 14, 15, 0, 8, 13, 3, 12, 9, 7, 5, 10, 6, 1,
+                                         13, 0, 11, 7, 4, 9, 1, 10, 14, 3, 5, 12, 2, 15, 8, 6,
+                                         1, 4, 11, 13, 12, 3, 7, 14, 10, 15, 6, 8, 0, 5, 9, 2,
+                                         6, 11, 13, 8, 1, 4, 10, 7, 9, 5, 0, 15, 14, 2, 3, 12};
+
+const unsigned short int SBOX8[4][16] = {13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14, 5, 0, 12, 7,
+                                         1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2,
+                                         7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
+                                         2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11};
 
 //FUNTIONS
 
@@ -102,6 +145,12 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round);
  */
 void union_subkey(char *part1, char *part2, char *subkey);
 
+char *funcao_feistel(char *RRodada, char *round_key);
+
+char *SBOXES(char *expansao);
+
+void PBox_feistel(char *resultado);
+
 
 int main() {
     setlocale(LC_ALL, "");
@@ -116,7 +165,13 @@ int main() {
     char *roundkey;
     char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
     char *permuted_plaintext;
-    char LN[2], RN[2];
+    char LN[4]; //parte da esqerda do bloco a ser encriptado
+    char RN[4]; //parte da direita do bloco a ser encriptado
+    char LRodada[4]; //parte da esquerda do bloco sendo encriptado, sendo usado no momento para encriptação nas rodadas
+    char RRodada[4]; //parte da direita do bloco sendo encriptado, sendo usado no momento para encriptação nas rodadas
+    char LNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte esquerda do bloco sendo encriptado
+    char RNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
+    char *resultado_f; //guarda o resultado da função F
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -234,16 +289,33 @@ int main() {
             //quebrar o bloco em 2
             LN[0] = permuted_plaintext[0];
             LN[1] = permuted_plaintext[1];
-            RN[0] = permuted_plaintext[2];
-            RN[1] = permuted_plaintext[3];
+            LN[3] = permuted_plaintext[2];
+            LN[4] = permuted_plaintext[3];
+            RN[0] = permuted_plaintext[4];
+            RN[1] = permuted_plaintext[5];
+            RN[2] = permuted_plaintext[6];
+            RN[3] = permuted_plaintext[7];
 
 
             for (int i = 0; i < NUM_RODADAS; i++) {
                 //gerar subchave de rodada
                 roundkey = round_key(subchave1, subchave2, i);
-                printf("Subchave recebida no main: ");
-                printbits(roundkey, 6);
 
+                if (i == 0) {
+                    for (int j = 0; j < 4; ++j) {
+                        LRodada[j] = LN[j];
+                        RRodada[j] = RN[j];
+                    }
+                } else {
+                    for (int j = 0; j < 4; ++j) {
+                        LRodada[j] = LNPRodada[j];
+                        RRodada[j] = RNPRodada[j];
+                    }
+                }
+                LNPRodada[0] = RRodada[0];
+                LNPRodada[1] = RRodada[1];
+                resultado_f = funcao_feistel(RRodada, roundkey);
+//                RNPRodada = resltado_f ^ LRodada;
                 free(roundkey);
             }
 
@@ -252,12 +324,167 @@ int main() {
 
 }
 
+char *funcao_feistel(char *RRodada, char *round_key) {
+    if (RRodada == NULL || round_key == NULL) {
+        return NULL;
+    }
+
+    char *resultado;
+    char *expansao;
+    int block_count = 0; //contador do bloco da subchave
+    char block_result = '\000'; //guarda o resultado do bloco que está sendo construído
+    int position; //guarda qual será o caractere acessado da key para extrair o bit requirido
+    char aux;
+    int shift; //
+    int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
+    char mask = 0b00000001; //mascara para isolar o bit após o shift de 7 bits a direita onde é colocado 1 a frente
+
+    expansao = (char *) malloc(sizeof(char) * 6);
+    //fazer a expansão de RRodada
+    for (int i = 0; i < 48; ++i) {
+        //descobre qual o bloco/caractere do RRodada será acessado
+        position = (int) (EBITSELECTION[i] - 1) / 8;
+        //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+        shift = EBITSELECTION[i] - (position * 8) - 1;
+        aux = (char) RRodada[position] << shift;
+        aux = aux >> 7;
+        aux = aux & mask;
+        //até aqui isolei o bit que quero usar
+        aux = aux << bit_position_block;
+        block_result = block_result | aux;
+
+        bit_position_block--;
+        if (bit_position_block < 0) {
+            expansao[block_count] = block_result;
+            block_count++;
+            bit_position_block = 7;
+            block_result = '\000';
+        }
+
+    }
+    if (trace) {
+        printf("RRodada expandido: ");
+        printbits(expansao, 6);
+    }
+
+    //XOR entre chave e RRodada expandido
+    for (int i = 0; i < 6; ++i) {
+        expansao[i] = expansao[i] ^ round_key[i];
+    }
+
+    resultado = SBOXES(expansao);
+    if (trace) {
+        printf("Resultado SBOXES: ");
+        printbits(resultado, 4);
+    }
+
+    PBox_feistel(resultado);
+    if (trace) {
+        printf("Resultado após PBOX: ");
+        printbits(resultado, 4);
+    }
+
+
+}
+
+void PBox_feistel(char *resultado) {
+    //TODO: implementar a permitação do resultado da saida das SBoxes
+}
+
+char *SBOXES(char *expansao) {
+    if (expansao == NULL) {
+        return NULL;
+    }
+
+    char *resultado; //guarda o resultado das sboxes a ser retornado
+    int linha, coluna;
+    char block_in; //guarda o bloco que irá passar pelas sboxes
+    char block_out, maskAux;
+    char mask1 = 0b00111111;
+    char maskLin = 0b00000001;
+    char maskCol = 0b00001111;
+
+    resultado = (char *) malloc(sizeof(char) * 4);
+
+    //SB1
+    block_in = ((expansao[0] >> 2) & mask1);
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    resultado[0] = SBOX1[linha][coluna];
+    resultado[0] <<= 4;
+
+
+    //SB2
+    maskAux = 0b00000011;
+    block_in = (expansao[0] & maskAux) << 4;
+    maskAux = 0b00001111;
+    block_in = ((expansao[1] >> 4) & maskAux) | block_in;
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_out = SBOX2[linha][coluna];
+    resultado[0] |= block_out;
+
+    //SB3
+    block_in = (expansao[1] & maskAux) << 2;
+    maskAux = 0b11000000;
+    block_in = (((expansao[2] & maskAux) >> 6) & 0b00000011) | block_in;
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    resultado[1] = SBOX3[linha][coluna];
+    resultado[1] <<= 4;
+
+    //SB4
+    maskAux = 0b00111111;
+    block_in = (expansao[2] & maskAux);
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_out = SBOX4[linha][coluna];
+    resultado[1] = resultado[1] | block_out;
+
+    //SB5
+    block_in = (expansao[3] >> 2) & maskAux;
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    resultado[2] = SBOX5[linha][coluna];
+    resultado[2] <<= 4;
+
+    //SB6
+    maskAux = 0b00000011;
+    block_in = ((expansao[3] & maskAux)) << 4;
+    maskAux = 0b11110000;
+    block_in = (((expansao[4] & maskAux) >> 4) & 0b00001111) | block_in;
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_out = SBOX6[linha][coluna];
+    resultado[2] = resultado[2] | block_out;
+
+    //SB7
+    maskAux = 0b00001111;
+    block_in = (expansao[4] & maskAux) << 2;
+    maskAux = 0b11000000;
+    block_in = (((expansao[5] & maskAux) >> 6) & 0b00000011) | block_in;
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    resultado[3] = SBOX7[linha][coluna];
+    resultado[3] <<= 4;
+
+    //SB8
+    maskAux = 0b00111111;
+    block_in = expansao[5] & maskAux;
+    coluna = (block_in >> 1) & maskCol;
+    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_out = SBOX8[linha][coluna];
+    resultado[3] |= block_out;
+
+    return resultado;
+}
+
 char *round_key(char *subkey_part1, char *subkey_part2, int round) {
     if (subkey_part1 == NULL || subkey_part2 == NULL || round < 0 || round > NUM_RODADAS) {
         return NULL;
     }
     char key_aux[7];
-    char *key_round = (char*) malloc(sizeof(char) * 6);
+    char *key_round = (char *) malloc(sizeof(char) * 6);
     int position;//descobre qual o caractere do bloco será acessado
     int shift; //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
     char aux;

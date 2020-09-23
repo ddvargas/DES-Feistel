@@ -20,3 +20,6 @@ https://www.ime.usp.br/~kellyrb/mac2166_2015/tabela_ascii.html
 
 MANIPULAÇÃO DE ARQUIVOS
 https://www.ufjf.br/jairo_souza/files/2009/12/3-Arquivos-Manipula%c3%a7%c3%a3o-de-arquivos-em-C.pdf
+
+SBOXES do DES
+https://commons.wikimedia.org/wiki/File:DES_S-box.jpg
