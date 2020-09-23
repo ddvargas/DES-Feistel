@@ -74,6 +74,9 @@ const unsigned short int SBOX8[4][16] = {13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14
                                          7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
                                          2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11};
 
+const unsigned short int TABELA_P[] = {16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32,
+                                       27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25};
+
 //FUNTIONS
 
 /**
@@ -145,10 +148,25 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round);
  */
 void union_subkey(char *part1, char *part2, char *subkey);
 
+/**
+ * Função que faz a encriptação com a chave de rodada, passando os resultados pelas SBoxes e PBox.
+ * @param RRodada Lado direito do bloco da rodada.
+ * @param round_key Subchave da rodada.
+ * @return Ponteiro com o resultado de 32 bits encriptado.
+ */
 char *funcao_feistel(char *RRodada, char *round_key);
 
+/**
+ * Realiza a difusão dos bits de acordo com as tabelas de SBOX do algoritmo.
+ * @param expansao Conjunto de 48 bits (vetor de char) a serem passados nas SBoxes.
+ * @return Ponteiro do vetor com o resultado de 32 bits.
+ */
 char *SBOXES(char *expansao);
 
+/**
+ * Realiza a permutação dos bits de acordo com a TABELA_P.
+ * @param resultado Endereço do vetor com 32bits para a permutação. O resultado da permutação é setado no mesmo vetor.
+ */
 void PBox_feistel(char *resultado);
 
 
@@ -317,6 +335,7 @@ int main() {
                 resultado_f = funcao_feistel(RRodada, roundkey);
 //                RNPRodada = resltado_f ^ LRodada;
                 free(roundkey);
+                free(resultado_f);
             }
 
         }
@@ -384,11 +403,44 @@ char *funcao_feistel(char *RRodada, char *round_key) {
         printbits(resultado, 4);
     }
 
-
+    return resultado;
 }
 
 void PBox_feistel(char *resultado) {
-    //TODO: implementar a permitação do resultado da saida das SBoxes
+    if (resultado != NULL) {
+        char temp[4];
+        int block_count = 0; //contador do bloco do resultado
+        char block_result = '\000';
+        int position; //guarda qual será o caractere acessado no resultaod para extrair o bit requirido
+        char aux;
+        int shift;
+        int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
+        char mask = 0b00000001; //mascara para isolar o bit após o shift de 7 bits a direita onde é colocado 1 a frente
+
+        for (int i = 0; i < 32; ++i) {
+            //descobre qual o bloco/caractere do resultado será acessado
+            position = (int) (TABELA_P[i] - 1) / 8;
+            //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+            shift = TABELA_P[i] - (position * 8) - 1;
+            aux = (char) resultado[position] << shift; //faz o shift
+            aux >>= 7; //coloca o bit desejado no bit menos significativo do byte
+            aux &= mask;
+            //até aqui isolei o bit desejado
+            aux <<= bit_position_block; //coloca o bit desejado na posição correta dentro do bloco
+            block_result |= aux;//incorpora o bit desejado ao bloco
+
+            bit_position_block--;
+            if (bit_position_block < 0) {
+                temp[block_count] = block_result;
+                block_count++;
+                bit_position_block = 7;
+                block_result = '\000';
+            }
+        }
+        for (int i=0; i < 4; i++) {
+            resultado[i] = temp[i];
+        }
+    }
 }
 
 char *SBOXES(char *expansao) {
