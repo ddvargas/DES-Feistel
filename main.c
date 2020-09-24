@@ -84,11 +84,6 @@ const unsigned short int TABELA_IP_INVERSA[] = {40,8,48,16,56,24,64,32,  39,7,47
 
 //FUNTIONS
 
-/**
- * Faz a inversão da chave para que ela seja lida de traz para frente quando feita a decriptação
- * @param key chave a ser invertida
- */
-void decriptacao(char *key);
 
 /**
  * Faz a validação da chave adicionando caracteres caso faltem
@@ -190,10 +185,11 @@ int main() {
     FILE *fcifra;
     char nome_arquivo[NOMEARQUIVO];
     short int menu_principal;
+    int roundkey_count; //contador do numero da subchave a ser usada na rodada, se inversa ou não
     char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
     char *subchave = NULL;
     char *subchave_pt1 = NULL, *subchave_pt2 = NULL;
-    char *roundkey;
+    char *roundkey[NUM_RODADAS]; //vetor de ponteiros para as subchaves de rodadas
     char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
     char *permuted_plaintext;
     char LN[4]; //parte da esqerda do bloco a ser encriptado
@@ -231,7 +227,7 @@ int main() {
                     exit(-1);
                 }
 
-                printf("\nDefina o nome do arquivo de plaintext: ");
+                printf("Defina o nome do arquivo de plaintext: ");
                 scanf("%s", nome_arquivo);
                 fflush(stdin);
                 fcifra = fopen(strcat(nome_arquivo, ".txt"), "w");
@@ -285,9 +281,6 @@ int main() {
             printbits(key, TAMANHOBLOCO);
         }
 
-        if (menu_principal == 2)
-            decriptacao(key);
-
         //gerar subkey
         subchave = (char *) malloc(sizeof(char) * TAMANHOBLOCO);
         subchave_pt1 = (char *) malloc(sizeof(char) * 4);
@@ -312,6 +305,7 @@ int main() {
                 printbits(plaintext, 8);
                 printf("Plaintext permutado: ");
                 printbits(permuted_plaintext, 8);
+                printf("\nGERANDO SUBCHAVES DE RODADA\n");
             }
             //quebrar o bloco em 2
             LN[0] = permuted_plaintext[0];
@@ -324,13 +318,19 @@ int main() {
             RN[3] = permuted_plaintext[7];
 
 
-            if (trace)
-                printf("\nINICIANDO RODADAS DE ENCRIPTAÇÃO");
+            //gerar subchaves de rodada
+            for (int i = 0; i < NUM_RODADAS; ++i) {
+                roundkey[i] = round_key(subchave_pt1, subchave_pt2, i);
+            }
+            roundkey_count = menu_principal == 2 ? NUM_RODADAS : 0;
+
+            if (trace) {
+                printf("\nINICIANDO ENCRIPTAÇÃO");
+            }
             for (int i = 0; i < NUM_RODADAS; i++) {
-                if (trace)
+                if (trace) {
                     printf("\nRODADA %d\n", i);
-                //gerar subchave de rodada
-                roundkey = round_key(subchave_pt1, subchave_pt2, i);
+                }
                 if (i == 0) {
                     for (int j = 0; j < 4; ++j) {
                         LRodada[j] = LN[j];
@@ -346,7 +346,7 @@ int main() {
                 LNPRodada[1] = RRodada[1];
                 LNPRodada[2] = RRodada[2];
                 LNPRodada[3] = RRodada[3];
-                resultado_f = funcao_feistel(RRodada, roundkey);
+                resultado_f = funcao_feistel(RRodada, &roundkey[roundkey_count]);
                 for (int j = 0; j < 4; ++j) {
                     RNPRodada[j] = resultado_f[j] ^ LRodada[j];
                 }
@@ -358,7 +358,12 @@ int main() {
                     printbits(RNPRodada, 4);
                 }
                 free(resultado_f);
-                free(roundkey);
+                free(roundkey[roundkey_count]);
+                if (menu_principal == 2){
+                    roundkey_count--;
+                } else{
+                    roundkey_count++;
+                }
             }
 
             //juntar LN e RN após as rodadas
@@ -640,6 +645,7 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
     char mask; //máscara para isolar os bits que seriam perdidos com o shift à esquerda
     char mask_d;//mascara para tirar as replicações de 1s quando shift à direita
     char ultimo; //guarda os bits iniciais perdidos após o shift à esquerda
+    //TODO: circular shift não ta funcionando direito
 
     mask = LEFT_SHIFT[round] == 2 ? 0b11000000 : 0b10000000; //formar a máscara
     mask_d = LEFT_SHIFT[round] == 2 ? 0b00000011 : 0b00000001; //formar a máscara
@@ -878,8 +884,4 @@ void printbits(char *input, int num_caracteres) {
         printf(" ");
     }
     printf("\n");
-}
-
-void decriptacao(char *key) {
-    //TODO: implementar função de reversão de bits da chave
 }

@@ -23,3 +23,28 @@ https://www.ufjf.br/jairo_souza/files/2009/12/3-Arquivos-Manipula%c3%a7%c3%a3o-d
 
 SBOXES do DES
 https://commons.wikimedia.org/wiki/File:DES_S-box.jpg
+
+
+//inverter a ordem dos bit da chave
+    if(key != NULL){
+        char temp[TAMANHOBLOCO];
+        char aux;
+        for (int i = 0; i < TAMANHOBLOCO; i++) {
+            temp[i] = '\000';
+        }
+        //para todos os caracteres
+        for (int i = 0, j = TAMANHOBLOCO-1; i < TAMANHOBLOCO; i++, j--) {
+            //para todos os bits dentro do caractere
+            for (int k = 0; k < 7; k++) {
+                aux = key[j] & 0b00000001;
+                temp[i] = temp[i] | aux;
+                temp[i] <<= 1;
+                key[j] >>= 1;
+            }
+        }
+        for (int i = 0; i < TAMANHOBLOCO; ++i) {
+            key[i] = temp[i];
+        }
+    }
+    resultado 1
+    7C����y}���ð�{��߭S+C�"�5
