@@ -77,10 +77,10 @@ const unsigned short int SBOX8[4][16] = {13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14
 const unsigned short int TABELA_P[] = {16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32,
                                        27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25};
 
-const unsigned short int TABELA_IP_INVERSA[] = {40,8,48,16,56,24,64,32,  39,7,47,15,55,23,63,31,
-                                                38,6,46,14,54,22,62,30,  37,5,45,13,53,21,61,29,
-                                                36,4,44,12,52,20,60,28,  35,3,43,11,51,19,59,27,
-                                                34,2,42,10,50,18,58,26,  33,1,41,9,49,17,57,25};
+const unsigned short int TABELA_IP_INVERSA[] = {40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31,
+                                                38, 6, 46, 14, 54, 22, 62, 30, 37, 5, 45, 13, 53, 21, 61, 29,
+                                                36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27,
+                                                34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25};
 
 //FUNTIONS
 
@@ -359,9 +359,9 @@ int main() {
                 }
                 free(resultado_f);
                 free(roundkey[roundkey_count]);
-                if (menu_principal == 2){
+                if (menu_principal == 2) {
                     roundkey_count--;
-                } else{
+                } else {
                     roundkey_count++;
                 }
             }
@@ -378,7 +378,7 @@ int main() {
 
             //permutar
             permutar(LNRN, 8, 0);
-            if(trace){
+            if (trace) {
                 printf("\nBloco encriptado: ");
                 printbits(LNRN, 8);
                 printf("\n\n");
@@ -395,8 +395,8 @@ int main() {
 
 }
 
-void permutar(char *vetor, int tamanho_bytes, short int tabela){
-    if (vetor != NULL && tamanho_bytes > 0 && tabela > -1){
+void permutar(char *vetor, int tamanho_bytes, short int tabela) {
+    if (vetor != NULL && tamanho_bytes > 0 && tabela > -1) {
         char temp[tamanho_bytes];
         int block_count = 0; //contador do bloco do resultado (temp)
         char block_result = '\000';
@@ -645,10 +645,12 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
     char mask; //máscara para isolar os bits que seriam perdidos com o shift à esquerda
     char mask_d;//mascara para tirar as replicações de 1s quando shift à direita
     char ultimo; //guarda os bits iniciais perdidos após o shift à esquerda
+    char mask_d2; //
     //TODO: circular shift não ta funcionando direito
 
     mask = LEFT_SHIFT[round] == 2 ? 0b11000000 : 0b10000000; //formar a máscara
     mask_d = LEFT_SHIFT[round] == 2 ? 0b00000011 : 0b00000001; //formar a máscara
+    mask_d2 = LEFT_SHIFT[round] == 2 ? 0b00110000 : 0b00010000;
     shift = LEFT_SHIFT[round] == 2 ? 6 : 7;
 
     //shift circular na parte 1
@@ -658,7 +660,7 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
         if (i != 3) {
             aux = ((subkey_part1[i + 1] & mask) >> shift) & mask_d;
         } else {
-            aux = (ultimo >> (shift - 4)) & mask_d;
+            aux = (ultimo >> (shift - 4)) & mask_d2;
         }
         subkey_part1[i] = subkey_part1[i] << LEFT_SHIFT[round];
         subkey_part1[i] = subkey_part1[i] | aux;
@@ -670,7 +672,7 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
         if (i != 3) {
             aux = ((subkey_part2[i + 1] & mask) >> shift) & mask_d;
         } else {
-            aux = (ultimo >> (shift - 4)) & mask_d;
+            aux = (ultimo >> (shift - 4)) & mask_d2;
         }
         subkey_part2[i] = subkey_part2[i] << LEFT_SHIFT[round];
         subkey_part2[i] = subkey_part2[i] | aux;
