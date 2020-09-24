@@ -192,7 +192,7 @@ int main() {
     short int menu_principal;
     char key[TAMANHOBLOCO + 1];//+1 para o \0 de fim de string
     char *subchave = NULL;
-    char *subchave1 = NULL, *subchave2 = NULL;
+    char *subchave_pt1 = NULL, *subchave_pt2 = NULL;
     char *roundkey;
     char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
     char *permuted_plaintext;
@@ -202,14 +202,14 @@ int main() {
     char RRodada[4]; //parte da direita do bloco sendo encriptado, sendo usado no momento para encriptação nas rodadas
     char LNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte esquerda do bloco sendo encriptado
     char RNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
-    char *resultado_f; //guarda o resultado da função F
+    char *resultado_f = NULL; //guarda o resultado da função F
     char LNRN[8]; //guarda a junção entre LN e RN após as rodadas
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
 
     //requisição para mostrar ou não o trace de execução
-    printf("Deseja mostrar os detalhes de execução? 1-Sim 0-Não\n");
+    printf("Deseja mostrar os detalhes de execução? 1-Sim 0-Não\nEscolha: ");
     scanf("%hu", &trace);
     if (trace != 0) {
         trace = 1;
@@ -218,7 +218,7 @@ int main() {
     }
 
     do {
-        printf("\n1-Encriptação  2-Decriptação  0-Sair\nEscolha: ");
+        printf("1-Encriptação  2-Decriptação  0-Sair\nEscolha: ");
         scanf("%hu", &menu_principal);
         switch (menu_principal) {
             case 2:
@@ -275,8 +275,6 @@ int main() {
         }
 
         //LEITURA E VALIDAÇÕES DA CHAVE
-        if (trace)
-            printf("INFO - Lendo e validando chave\n");
         if (fgets(key, TAMANHOBLOCO + 1, fkey) == NULL) {
             printf("ERRO - Erro na leitura da chave\n");
             exit(-1);
@@ -291,30 +289,28 @@ int main() {
             decriptacao(key);
 
         //gerar subkey
-        if (trace)
-            printf("INFO - Gerando subkey\n");
         subchave = (char *) malloc(sizeof(char) * TAMANHOBLOCO);
-        subchave1 = (char *) malloc(sizeof(char) * 4);
-        subchave2 = (char *) malloc(sizeof(char) * 4);
+        subchave_pt1 = (char *) malloc(sizeof(char) * 4);
+        subchave_pt2 = (char *) malloc(sizeof(char) * 4);
         subkey(key, subchave);
-        split_key(subchave, subchave1, subchave2);
+        split_key(subchave, subchave_pt1, subchave_pt2);
         if (trace) {
-            printf("Subchave gerada: ");
+            printf("Subchave: ");
             printbits(subchave, 7);
-            printf("Quebrando a chave em duas partes\n");
             printf("Parte 1: ");
-            printbits(subchave1, 4);
+            printbits(subchave_pt1, 4);
             printf("Parte 2: ");
-            printbits(subchave2, 4);
+            printbits(subchave_pt2, 4);
         }
 
         //LER ARQUIVO A SER ENCRIPTADO
         while (read_file(fplaintext, plaintext, TAMANHOBLOCO)) {
             permuted_plaintext = PBox(plaintext, TAMANHOBLOCO);
+            //TODO: ajustar função permutar para permutar o plaintext inicial
             if (trace) {
-                printf("Plaintext: (%s) ", plaintext);
+                printf("Plaintext: ");
                 printbits(plaintext, 8);
-                printf("PermutedPlaintext: ");
+                printf("Plaintext permutado: ");
                 printbits(permuted_plaintext, 8);
             }
             //quebrar o bloco em 2
@@ -328,10 +324,13 @@ int main() {
             RN[3] = permuted_plaintext[7];
 
 
+            if (trace)
+                printf("\nINICIANDO RODADAS DE ENCRIPTAÇÃO");
             for (int i = 0; i < NUM_RODADAS; i++) {
+                if (trace)
+                    printf("\nRODADA %d\n", i);
                 //gerar subchave de rodada
-                roundkey = round_key(subchave1, subchave2, i);
-
+                roundkey = round_key(subchave_pt1, subchave_pt2, i);
                 if (i == 0) {
                     for (int j = 0; j < 4; ++j) {
                         LRodada[j] = LN[j];
@@ -353,9 +352,9 @@ int main() {
                 }
 
                 if (trace && i < 15) {
-                    printf("LNProxima: ");
+                    printf("Left próx rodada: ");
                     printbits(LNPRodada, 4);
-                    printf("RNProxima: ");
+                    printf("Right próx rodada: ");
                     printbits(RNPRodada, 4);
                 }
                 free(resultado_f);
@@ -375,15 +374,18 @@ int main() {
             //permutar
             permutar(LNRN, 8, 0);
             if(trace){
-                printf("Bloco encriptado: ");
+                printf("\nBloco encriptado: ");
                 printbits(LNRN, 8);
+                printf("\n\n");
             }
             //gravar
             for (int i = 0; i < TAMANHOBLOCO; ++i) {
                 fputc(LNRN[i], fcifra);
             }
-
+            free(permuted_plaintext);
         }
+
+        printf("Sucesso!\n");
     } while (menu_principal != 0);
 
 }
@@ -437,7 +439,7 @@ char *funcao_feistel(char *RRodada, char *round_key) {
         return NULL;
     }
 
-    char *resultado;
+    char *resultado = NULL;
     char *expansao;
     int block_count = 0; //contador do bloco da subchave
     char block_result = '\000'; //guarda o resultado do bloco que está sendo construído
@@ -471,7 +473,8 @@ char *funcao_feistel(char *RRodada, char *round_key) {
 
     }
     if (trace) {
-        printf("RRodada expandido: ");
+        printf("Função de Feistel\n");
+        printf("Lado direito expandido: ");
         printbits(expansao, 6);
     }
 
@@ -482,6 +485,8 @@ char *funcao_feistel(char *RRodada, char *round_key) {
 
     resultado = SBOXES(expansao);
     if (trace) {
+        printf("Lado direito XOR subchave: ");
+        printbits(expansao, 6);//TODO: 4 ou 6 caracteres
         printf("Resultado SBOXES: ");
         printbits(resultado, 4);
     }
@@ -625,7 +630,7 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
         return NULL;
     }
     char key_aux[7];
-    char *key_round = (char *) malloc(sizeof(char) * 6);
+    char *key_round = (char *) malloc(sizeof(char) * 7);
     int position;//descobre qual o caractere do bloco será acessado
     int shift; //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
     char aux;
@@ -689,10 +694,10 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
         }
     }
     if (trace) {
-        printf("\n\nCircular shift nas partes da subchave (rodada %d)\n", round);
-        printf("Parte 1 da subchave após o shift circular (ignorar últimos 4 bits): ");
+        printf("Circular shift nas partes da subchave: \n");
+        printf("Parte 1 subchave com shift circular (ignorar últimos 4 bits): ");
         printbits(subkey_part1, 4);
-        printf("Parte 2 da subchave após o shift circular (ignorar os últimos 4 bits): ");
+        printf("Parte 2 subchave com shift circular (ignorar últimos 4 bits): ");
         printbits(subkey_part2, 4);
         printf("Subchave de rodada (%d): ", round);
         printbits(key_round, 6);
