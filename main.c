@@ -77,6 +77,11 @@ const unsigned short int SBOX8[4][16] = {13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14
 const unsigned short int TABELA_P[] = {16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32,
                                        27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25};
 
+const unsigned short int TABELA_IP_INVERSA[] = {40,8,48,16,56,24,64,32,  39,7,47,15,55,23,63,31,
+                                                38,6,46,14,54,22,62,30,  37,5,45,13,53,21,61,29,
+                                                36,4,44,12,52,20,60,28,  35,3,43,11,51,19,59,27,
+                                                34,2,42,10,50,18,58,26,  33,1,41,9,49,17,57,25};
+
 //FUNTIONS
 
 /**
@@ -169,6 +174,14 @@ char *SBOXES(char *expansao);
  */
 void PBox_feistel(char *resultado);
 
+/**
+ * Faz a permutação dos bits de um vetor de acordo com a tabela de permutação.
+ * @param vetor Vetor contendo os bits a serem permutados.
+ * @param tamanho_bytes Quantidade de bytes a serem permutados.
+ * @param tabela Número indicando a tabela usada para a permutação. 0-TABELA_IP_INVERSA 1-TABELA_IP
+ */
+void permutar(char *vetor, int tamanho_bytes, short int tabela);
+
 
 int main() {
     setlocale(LC_ALL, "");
@@ -190,6 +203,7 @@ int main() {
     char LNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte esquerda do bloco sendo encriptado
     char RNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
     char *resultado_f; //guarda o resultado da função F
+    char LNRN[8]; //guarda a junção entre LN e RN após as rodadas
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -296,7 +310,6 @@ int main() {
 
         //LER ARQUIVO A SER ENCRIPTADO
         while (read_file(fplaintext, plaintext, TAMANHOBLOCO)) {
-            //TODO: encriptar
             permuted_plaintext = PBox(plaintext, TAMANHOBLOCO);
             if (trace) {
                 printf("Plaintext: (%s) ", plaintext);
@@ -332,15 +345,91 @@ int main() {
                 }
                 LNPRodada[0] = RRodada[0];
                 LNPRodada[1] = RRodada[1];
+                LNPRodada[2] = RRodada[2];
+                LNPRodada[3] = RRodada[3];
                 resultado_f = funcao_feistel(RRodada, roundkey);
-//                RNPRodada = resltado_f ^ LRodada;
-                free(roundkey);
+                for (int j = 0; j < 4; ++j) {
+                    RNPRodada[j] = resultado_f[j] ^ LRodada[j];
+                }
+
+                if (trace && i < 15) {
+                    printf("LNProxima: ");
+                    printbits(LNPRodada, 4);
+                    printf("RNProxima: ");
+                    printbits(RNPRodada, 4);
+                }
                 free(resultado_f);
+                free(roundkey);
+            }
+
+            //juntar LN e RN após as rodadas
+            LNRN[0] = LRodada[0];
+            LNRN[1] = LRodada[1];
+            LNRN[2] = LRodada[2];
+            LNRN[3] = LRodada[3];
+            LNRN[4] = RRodada[0];
+            LNRN[5] = RRodada[1];
+            LNRN[6] = RRodada[2];
+            LNRN[7] = RRodada[3];
+
+            //permutar
+            permutar(LNRN, 8, 0);
+            if(trace){
+                printf("Bloco encriptado: ");
+                printbits(LNRN, 8);
+            }
+            //gravar
+            for (int i = 0; i < TAMANHOBLOCO; ++i) {
+                fputc(LNRN[i], fcifra);
             }
 
         }
     } while (menu_principal != 0);
 
+}
+
+void permutar(char *vetor, int tamanho_bytes, short int tabela){
+    if (vetor != NULL && tamanho_bytes > 0 && tabela > -1){
+        char temp[tamanho_bytes];
+        int block_count = 0; //contador do bloco do resultado (temp)
+        char block_result = '\000';
+        int position; //guarda qual será o caractere acessado no vetor para extrair o bit requirido
+        char aux;
+        int shift; //quantidade de shists a serem realizados para a esquerda para deixar o bit desejado na posição desejada dentro do bloco
+        int bit_position_block = 7; //contador para a posição para por o bit requirido dentro do bloco
+        char mask = 0b00000001;//mascara para isolar o bit após o shift de 7 bits a direita onde é colocado 1 a frente
+
+        for (int i = 0; i < tamanho_bytes * 8; ++i) {
+            switch (tabela) {
+                case 0:
+                    //descobre qual o bloco/caractere do resultado será acessado
+                    position = (TABELA_IP_INVERSA[i] - 1) / 8;
+                    //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
+                    shift = TABELA_IP_INVERSA[i] - (position * 8) - 1;
+                    break;
+            }
+
+            aux = (char) vetor[position] << shift; //faz o shift
+            aux >>= 7; //coloca o bit desejado no bit menos significativo do byte
+            aux &= mask;
+            //até aqui isolei o bit desejado
+            aux <<= bit_position_block; //coloca o bit desejado na posição correta dentro do bloco
+            block_result |= aux;//incorpora o bit desejado ao bloco
+
+            bit_position_block--;
+            if (bit_position_block < 0) {
+                temp[block_count] = block_result;
+                block_count++;
+                bit_position_block = 7;
+                block_result = '\000';
+            }
+        }
+
+        //transferir do temporário para o vetor passado como  parâmetro
+        for (int i = 0; i < tamanho_bytes; i++) {
+            vetor[i] = temp[i];
+        }
+    }
 }
 
 char *funcao_feistel(char *RRodada, char *round_key) {
@@ -437,7 +526,7 @@ void PBox_feistel(char *resultado) {
                 block_result = '\000';
             }
         }
-        for (int i=0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             resultado[i] = temp[i];
         }
     }
