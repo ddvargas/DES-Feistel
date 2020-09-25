@@ -25,6 +25,10 @@ SBOXES do DES
 https://commons.wikimedia.org/wiki/File:DES_S-box.jpg
 
 
+Fluxo do DES encriptação
+https://image.slidesharecdn.com/sfc-1314-150519214534-lva1-app6892/95/curso-seguridad-fsica-y-criptografa-algoritmo-des-9-638.jpg?cb=1432229726
+
+
 //inverter a ordem dos bit da chave
     if(key != NULL){
         char temp[TAMANHOBLOCO];

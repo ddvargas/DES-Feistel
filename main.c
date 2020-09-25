@@ -74,8 +74,8 @@ const unsigned short int SBOX8[4][16] = {13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14
                                          7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
                                          2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11};
 
-const unsigned short int TABELA_P[] = {16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10, 2, 8, 24, 14, 32,
-                                       27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25};
+const unsigned short int TABELA_P[] = {16, 7, 20, 21, 29, 12, 28, 17, 1, 15, 23, 26, 5, 18, 31, 10,
+                                       2, 8, 24, 14, 32, 27, 3, 9, 19, 13, 30, 6, 22, 11, 4, 25};
 
 const unsigned short int TABELA_IP_INVERSA[] = {40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31,
                                                 38, 6, 46, 14, 54, 22, 62, 30, 37, 5, 45, 13, 53, 21, 61, 29,
@@ -192,12 +192,12 @@ int main() {
     char *roundkey[NUM_RODADAS]; //vetor de ponteiros para as subchaves de rodadas
     char plaintext[TAMANHOBLOCO]; //armazena um fragmento de texto a ser encriptado
     char *permuted_plaintext;
-    char LN[4]; //parte da esqerda do bloco a ser encriptado
-    char RN[4]; //parte da direita do bloco a ser encriptado
+    char LBloco[4]; //parte da esqerda do bloco a ser encriptado
+    char RBloco[4]; //parte da direita do bloco a ser encriptado
     char LRodada[4]; //parte da esquerda do bloco sendo encriptado, sendo usado no momento para encriptação nas rodadas
     char RRodada[4]; //parte da direita do bloco sendo encriptado, sendo usado no momento para encriptação nas rodadas
-    char LNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte esquerda do bloco sendo encriptado
-    char RNPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
+    char LPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte esquerda do bloco sendo encriptado
+    char RPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
     char *resultado_f = NULL; //guarda o resultado da função F
     char LNRN[8]; //guarda a junção entre LN e RN após as rodadas
 
@@ -296,8 +296,14 @@ int main() {
             printbits(subchave_pt2, 4);
         }
 
+        //gerar subchaves de rodada
+        for (int i = 0; i < NUM_RODADAS; ++i) {
+            roundkey[i] = round_key(subchave_pt1, subchave_pt2, i);
+        }
+
         //LER ARQUIVO A SER ENCRIPTADO
         while (read_file(fplaintext, plaintext, TAMANHOBLOCO)) {
+            roundkey_count = menu_principal == 2 ? NUM_RODADAS - 1 : 0;
             permuted_plaintext = PBox(plaintext, TAMANHOBLOCO);
             //TODO: ajustar função permutar para permutar o plaintext inicial
             if (trace) {
@@ -308,24 +314,21 @@ int main() {
                 printf("\nGERANDO SUBCHAVES DE RODADA\n");
             }
             //quebrar o bloco em 2
-            LN[0] = permuted_plaintext[0];
-            LN[1] = permuted_plaintext[1];
-            LN[3] = permuted_plaintext[2];
-            LN[4] = permuted_plaintext[3];
-            RN[0] = permuted_plaintext[4];
-            RN[1] = permuted_plaintext[5];
-            RN[2] = permuted_plaintext[6];
-            RN[3] = permuted_plaintext[7];
+            LBloco[0] = permuted_plaintext[0];
+            LBloco[1] = permuted_plaintext[1];
+            LBloco[2] = permuted_plaintext[2];
+            LBloco[3] = permuted_plaintext[3];
+            RBloco[0] = permuted_plaintext[4];
+            RBloco[1] = permuted_plaintext[5];
+            RBloco[2] = permuted_plaintext[6];
+            RBloco[3] = permuted_plaintext[7];
 
-
-            //gerar subchaves de rodada
-            for (int i = 0; i < NUM_RODADAS; ++i) {
-                roundkey[i] = round_key(subchave_pt1, subchave_pt2, i);
-            }
-            roundkey_count = menu_principal == 2 ? NUM_RODADAS : 0;
 
             if (trace) {
-                printf("\nINICIANDO ENCRIPTAÇÃO");
+                if (menu_principal == 2)
+                    printf("\nINICIANDO DECRIPTAÇÃO");
+                else
+                    printf("\nINICIANDO ENCRIPTAÇÃO");
             }
             for (int i = 0; i < NUM_RODADAS; i++) {
                 if (trace) {
@@ -333,32 +336,35 @@ int main() {
                 }
                 if (i == 0) {
                     for (int j = 0; j < 4; ++j) {
-                        LRodada[j] = LN[j];
-                        RRodada[j] = RN[j];
+                        LRodada[j] = LBloco[j];
+                        RRodada[j] = RBloco[j];
                     }
                 } else {
                     for (int j = 0; j < 4; ++j) {
-                        LRodada[j] = LNPRodada[j];
-                        RRodada[j] = RNPRodada[j];
+                        LRodada[j] = LPRodada[j];
+                        RRodada[j] = RPRodada[j];
                     }
                 }
-                LNPRodada[0] = RRodada[0];
-                LNPRodada[1] = RRodada[1];
-                LNPRodada[2] = RRodada[2];
-                LNPRodada[3] = RRodada[3];
-                resultado_f = funcao_feistel(RRodada, &roundkey[roundkey_count]);
+                printf("RRodada: ");
+                printbits(RRodada, 4);
+                printf("LRodada: ");
+                printbits(LRodada, 4);
+                LPRodada[0] = RRodada[0];
+                LPRodada[1] = RRodada[1];
+                LPRodada[2] = RRodada[2];
+                LPRodada[3] = RRodada[3];
+                resultado_f = funcao_feistel(RRodada, roundkey[roundkey_count]);
                 for (int j = 0; j < 4; ++j) {
-                    RNPRodada[j] = resultado_f[j] ^ LRodada[j];
+                    RPRodada[j] = resultado_f[j] ^ LRodada[j];
                 }
 
                 if (trace && i < 15) {
                     printf("Left próx rodada: ");
-                    printbits(LNPRodada, 4);
+                    printbits(LPRodada, 4);
                     printf("Right próx rodada: ");
-                    printbits(RNPRodada, 4);
+                    printbits(RPRodada, 4);
                 }
                 free(resultado_f);
-                free(roundkey[roundkey_count]);
                 if (menu_principal == 2) {
                     roundkey_count--;
                 } else {
@@ -367,14 +373,14 @@ int main() {
             }
 
             //juntar LN e RN após as rodadas
-            LNRN[0] = LRodada[0];
-            LNRN[1] = LRodada[1];
-            LNRN[2] = LRodada[2];
-            LNRN[3] = LRodada[3];
-            LNRN[4] = RRodada[0];
-            LNRN[5] = RRodada[1];
-            LNRN[6] = RRodada[2];
-            LNRN[7] = RRodada[3];
+            LNRN[0] = RPRodada[0];
+            LNRN[1] = RPRodada[1];
+            LNRN[2] = RPRodada[2];
+            LNRN[3] = RPRodada[3];
+            LNRN[4] = LPRodada[0];
+            LNRN[5] = LPRodada[1];
+            LNRN[6] = LPRodada[2];
+            LNRN[7] = LPRodada[3];
 
             //permutar
             permutar(LNRN, 8, 0);
@@ -391,6 +397,14 @@ int main() {
         }
 
         printf("Sucesso!\n");
+
+        //liberar memórias e
+        for (int i = 0; i < NUM_RODADAS; ++i) {
+            free(roundkey[i]);
+        }
+        fclose(fcifra);
+        fclose(fplaintext);
+        fclose(fkey);
     } while (menu_principal != 0);
 
 }
@@ -733,7 +747,7 @@ char *PBox(char *bloco, int block_size) {
         return NULL;
     }
 
-    char *bloco_permutado = malloc(sizeof(char) * block_size);
+    char *bloco_permutado = (char *) malloc(sizeof(char) * block_size);
     int position;//descobre qual o caractere do bloco será acessado
     int shift; //calcula a quantidade de shifts a esquerda será necessário para isolar o bit desejado
     char aux;
@@ -780,7 +794,7 @@ bool read_file(FILE *file, char *buffer, int buffer_size) {
             if (c > 0) {
                 buffer[i] = c;
             } else {
-                buffer[i] = NULL;
+                buffer[i] = '\000';
             }
         }
         return true;
@@ -870,12 +884,12 @@ void subkey(char *key, char *subchave) {
 }
 
 void printbits(char *input, int num_caracteres) {
-    char aux = '\000';
+    unsigned char aux = '\000';
 
     for (int j = 0; j < num_caracteres; j++) {
         for (int i = 8; i > 0; i--) {
             aux = input[j] << (8 - i);
-            aux = aux >> 7;
+            aux = aux >> 7u;
 
             if (aux) {
                 printf("1");
