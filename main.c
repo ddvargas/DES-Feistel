@@ -35,7 +35,7 @@ const unsigned short int EBITSELECTION[] = {32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9,
                                             22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1};
 
 const unsigned short int SBOX1[4][16] = {14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
-                                         0, 15, 7, 3, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
+                                         0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
                                          4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 13, 10, 5, 0,
                                          15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13};
 
@@ -505,7 +505,7 @@ char *funcao_feistel(char *RRodada, char *round_key) {
     resultado = SBOXES(expansao);
     if (trace) {
         printf("Lado direito XOR subchave: ");
-        printbits(expansao, 6);//TODO: 4 ou 6 caracteres
+        printbits(expansao, 6);
         printf("Resultado SBOXES: ");
         printbits(resultado, 4);
     }
@@ -660,7 +660,6 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
     char mask_d;//mascara para tirar as replicações de 1s quando shift à direita
     char ultimo; //guarda os bits iniciais perdidos após o shift à esquerda
     char mask_d2; //
-    //TODO: circular shift não ta funcionando direito
 
     mask = LEFT_SHIFT[round] == 2 ? 0b11000000 : 0b10000000; //formar a máscara
     mask_d = LEFT_SHIFT[round] == 2 ? 0b00000011 : 0b00000001; //formar a máscara
