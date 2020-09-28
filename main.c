@@ -164,6 +164,14 @@ char *SBOXES(const char *expansao);
  */
 void permutar(char *vetor, int tamanho_bytes, short int tabela);
 
+/**
+ * Realiza a gravação no arquivo de saída.
+ * @param file Ponteiro do arquivo de saída já aberto para gravação.
+ * @param text Vetor de caracteres a serem gravados.
+ * @param qtd Quantidade de caracteres a serem gravados.
+ */
+void write_file(FILE *file, unsigned char *text, int qtd);
+
 
 int main() {
     setlocale(LC_ALL, "");
@@ -381,9 +389,7 @@ int main() {
                 printf("\n\n");
             }
             //gravar
-            for (int i = 0; i < TAMANHOBLOCO; ++i) {
-                fputc(LNRN[i], fcifra);
-            }
+            write_file(fcifra, LNRN, 8);
         }
 
         printf("Sucesso!\n");
@@ -397,6 +403,18 @@ int main() {
         fclose(fkey);
     } while (menu_principal != 0);
 
+}
+
+void write_file(FILE *file, unsigned char *text, int qtd){
+    if (file == NULL || text == NULL){
+        return;
+    }
+
+    for (int i = 0; i < qtd; ++i) {
+        if (text[i] != '\000'){
+            fputc(text[i], file);
+        }
+    }
 }
 
 void permutar(char *vetor, int tamanho_bytes, short int tabela) {
@@ -717,7 +735,7 @@ bool read_file(FILE *file, char *buffer, int buffer_size) {
                     return false;
                 }
                 for (i; i < buffer_size; i++) {
-                    buffer[i] = NULL;
+                    buffer[i] = '\000';
                 }
             }
         }
