@@ -153,7 +153,7 @@ char *funcao_feistel(char *RRodada, char *round_key);
  * @param expansao Conjunto de 48 bits (vetor de char) a serem passados nas SBoxes.
  * @return Ponteiro do vetor com o resultado de 32 bits.
  */
-char *SBOXES(char *expansao);
+char *SBOXES(const char *expansao);
 
 /**
  * Faz a permutação dos bits de um vetor de acordo com a tabela de permutação.
@@ -268,7 +268,7 @@ int main() {
         }
 
         //gerar subkey
-        subchave = (char *) malloc(sizeof(char) * TAMANHOBLOCO-1);
+        subchave = (char *) malloc(sizeof(char) * TAMANHOBLOCO - 1);
         subchave_pt1 = (char *) malloc(sizeof(char) * 4);
         subchave_pt2 = (char *) malloc(sizeof(char) * 4);
         subkey(key, subchave);
@@ -296,7 +296,11 @@ int main() {
                 printf("Plaintext: ");
                 printbits(plaintext, 8);
             }
-            permutar(plaintext, 8, 1);
+            if (menu_principal == 2) {
+                permutar(plaintext, 8, 0);
+            } else {
+                permutar(plaintext, 8, 1);
+            }
             if (trace) {
                 printf("Plaintext permutado: ");
                 printbits(plaintext, 8);
@@ -371,7 +375,11 @@ int main() {
             LNRN[7] = LPRodada[3];
 
             //permutar
-            permutar(LNRN, 8, 0);
+            if (menu_principal == 2) {
+                permutar(LNRN, 8, 1);
+            } else {
+                permutar(LNRN, 8, 0);
+            }
             if (trace) {
                 printf("\nBloco encriptado: ");
                 printbits(LNRN, 8);
@@ -519,92 +527,95 @@ char *funcao_feistel(char *RRodada, char *round_key) {
     return resultado;
 }
 
-char *SBOXES(char *expansao) {
+char *SBOXES(const char *expansao) {
     if (expansao == NULL) {
         return NULL;
     }
 
-    char *resultado; //guarda o resultado das sboxes a ser retornado
-    int linha, coluna;
-    char block_in; //guarda o bloco que irá passar pelas sboxes
-    char block_out, maskAux;
-    char mask1 = 0b00111111;
-    char maskLin = 0b00000001;
-    char maskCol = 0b00001111;
+    unsigned char *resultado; //guarda o resultado das sboxes a ser retornado
+    unsigned int linha, coluna;
+    unsigned char block_in; //guarda o bloco que irá passar pelas sboxes
+    unsigned char block_out, maskAux;
+    unsigned char mask1 = 0b00111111;
+    unsigned char maskLin = 0b00000001;
+    unsigned char maskCol = 0b00001111;
 
-    resultado = (char *) malloc(sizeof(char) * 4);
+    resultado = (unsigned char *) malloc(sizeof(char) * 4);
 
     //SB1
-    block_in = ((expansao[0] >> 2) & mask1);
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
-    resultado[0] = SBOX1[linha][coluna];
-    resultado[0] <<= 4;
+    block_in = (unsigned char) (((unsigned int) expansao[0] >> 2u) & mask1);
+    coluna = (unsigned int) ((unsigned int) block_in >> 1u) & maskCol;
+    linha = (unsigned int) ((unsigned int) ((unsigned int) (block_in >> 5u) & maskLin) << 1u) |
+            (unsigned int) (block_in & maskLin);
+    resultado[0] = (char) SBOX1[linha][coluna];
+    resultado[0] <<= 4u;
 
 
     //SB2
     maskAux = 0b00000011;
-    block_in = (expansao[0] & maskAux) << 4;
+    block_in = (unsigned char) ((unsigned char) expansao[0] & maskAux) << 4u;
     maskAux = 0b00001111;
-    block_in = ((expansao[1] >> 4) & maskAux) | block_in;
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
-    block_out = SBOX2[linha][coluna];
+    block_in = (unsigned char) ((unsigned char) ((unsigned char) expansao[1] >> 4u) & maskAux) | block_in;
+    coluna = (unsigned int) (block_in >> 1u) & maskCol;
+    linha = (unsigned int) ((((unsigned int) block_in >> 5u) & maskLin) << 1u) | ((unsigned int) block_in & maskLin);
+    block_out = (char) SBOX2[linha][coluna];
     resultado[0] |= block_out;
 
     //SB3
-    block_in = (expansao[1] & maskAux) << 2;
+    block_in = (unsigned char) ((unsigned char) expansao[1] & maskAux) << 2u;
     maskAux = 0b11000000;
-    block_in = (((expansao[2] & maskAux) >> 6) & 0b00000011) | block_in;
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_in =
+            ((unsigned char) ((unsigned char) ((unsigned char) expansao[2] & maskAux) >> 6u) & 0b00000011) | block_in;
+    coluna = (unsigned int) (block_in >> 1u) & maskCol;
+    linha = (unsigned int) ((unsigned char) ((block_in >> 5u) & maskLin) << 1u) | (block_in & maskLin);
     resultado[1] = SBOX3[linha][coluna];
-    resultado[1] <<= 4;
+    resultado[1] = (unsigned int) resultado[1] << 4u;
 
     //SB4
     maskAux = 0b00111111;
-    block_in = (expansao[2] & maskAux);
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_in = ((unsigned char) expansao[2] & maskAux);
+    coluna = (unsigned int) ((unsigned int) block_in >> 1u) & maskCol;
+    linha = (unsigned int) ((((unsigned int) block_in >> 5u) & maskLin) << 1u) | ((unsigned int) block_in & maskLin);
     block_out = SBOX4[linha][coluna];
     resultado[1] = resultado[1] | block_out;
 
     //SB5
-    block_in = (expansao[3] >> 2) & maskAux;
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_in = (unsigned char) ((unsigned int) expansao[3] >> 2u) & maskAux;
+    coluna = (unsigned int) ((unsigned int) block_in >> 1u) & maskCol;
+    linha = (unsigned int) ((((unsigned int) block_in >> 5u) & maskLin) << 1u) | ((unsigned int) block_in & maskLin);
     resultado[2] = SBOX5[linha][coluna];
-    resultado[2] <<= 4;
+    resultado[2] = (unsigned int) resultado[2] << 4u;
 
     //SB6
     maskAux = 0b00000011;
-    block_in = ((expansao[3] & maskAux)) << 4;
+    block_in = (((unsigned int) expansao[3] & maskAux)) << 4u;
     maskAux = 0b11110000;
-    block_in = (((expansao[4] & maskAux) >> 4) & 0b00001111) | block_in;
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_in = (unsigned char) (((unsigned char) ((unsigned int) expansao[4] & maskAux) >> 4u) & 0b00001111) |
+               (unsigned int) block_in;
+    coluna = ((unsigned int) block_in >> 1u) & maskCol;
+    linha = (unsigned int) ((((unsigned int) block_in >> 5u) & maskLin) << 1u) | ((unsigned int) block_in & maskLin);
     block_out = SBOX6[linha][coluna];
     resultado[2] = resultado[2] | block_out;
 
     //SB7
     maskAux = 0b00001111;
-    block_in = (expansao[4] & maskAux) << 2;
+    block_in = (unsigned char) ((unsigned char) expansao[4] & maskAux) << 2u;
     maskAux = 0b11000000;
-    block_in = (((expansao[5] & maskAux) >> 6) & 0b00000011) | block_in;
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
-    resultado[3] = SBOX7[linha][coluna];
-    resultado[3] <<= 4;
+    block_in = (unsigned char) ((((unsigned int) (unsigned char) expansao[5] & maskAux) >> 6u) & 0b00000011) | block_in;
+    coluna = (unsigned int) ((unsigned int) block_in >> 1u) & maskCol;
+    linha = (((block_in >> 5u) & maskLin) << 1u) | (block_in & maskLin);
+    resultado[3] = (unsigned int) SBOX7[linha][coluna];
+    resultado[3] = (unsigned char) ((unsigned int) resultado[3] << 4u);
 
     //SB8
     maskAux = 0b00111111;
-    block_in = expansao[5] & maskAux;
-    coluna = (block_in >> 1) & maskCol;
-    linha = (((block_in >> 5) & maskLin) << 1) | (block_in & maskLin);
+    block_in = (unsigned char) expansao[5] & maskAux;
+    coluna = ((unsigned int) block_in >> 1u) & maskCol;
+    linha = (((block_in >> 5u) & maskLin) << 1u) | (block_in & maskLin);
     block_out = SBOX8[linha][coluna];
     resultado[3] |= block_out;
 
-    return resultado;
+    return (char*) resultado;
 }
 
 char *round_key(char *subkey_part1, char *subkey_part2, int round) {
@@ -671,7 +682,7 @@ char *round_key(char *subkey_part1, char *subkey_part2, int round) {
         key_round[i] = key_aux[i];
     }
 
-    if (trace){
+    if (trace) {
         printf("Subchave de rodada (%d): ", round);
         printbits(key_round, 6);
     }
