@@ -296,11 +296,8 @@ int main() {
                 printf("Plaintext: ");
                 printbits(plaintext, 8);
             }
-            if (menu_principal == 2) {
-                permutar(plaintext, 8, 0);
-            } else {
-                permutar(plaintext, 8, 1);
-            }
+            permutar(plaintext, 8, 1);
+
             if (trace) {
                 printf("Plaintext permutado: ");
                 printbits(plaintext, 8);
@@ -323,9 +320,8 @@ int main() {
                     printf("\nINICIANDO ENCRIPTAÇÃO");
             }
             for (int i = 0; i < NUM_RODADAS; i++) {
-                if (trace) {
+                if (trace)
                     printf("\nRODADA %d\n", i);
-                }
                 if (i == 0) {
                     for (int j = 0; j < 4; ++j) {
                         LRodada[j] = LBloco[j];
@@ -337,10 +333,12 @@ int main() {
                         RRodada[j] = RPRodada[j];
                     }
                 }
-                printf("RRodada: ");
-                printbits(RRodada, 4);
-                printf("LRodada: ");
-                printbits(LRodada, 4);
+                if (trace) {
+                    printf("RRodada: ");
+                    printbits(RRodada, 4);
+                    printf("LRodada: ");
+                    printbits(LRodada, 4);
+                }
                 LPRodada[0] = RRodada[0];
                 LPRodada[1] = RRodada[1];
                 LPRodada[2] = RRodada[2];
@@ -375,11 +373,8 @@ int main() {
             LNRN[7] = LPRodada[3];
 
             //permutar
-            if (menu_principal == 2) {
-                permutar(LNRN, 8, 1);
-            } else {
-                permutar(LNRN, 8, 0);
-            }
+            permutar(LNRN, 8, 0);
+
             if (trace) {
                 printf("\nBloco encriptado: ");
                 printbits(LNRN, 8);
@@ -615,7 +610,7 @@ char *SBOXES(const char *expansao) {
     block_out = SBOX8[linha][coluna];
     resultado[3] |= block_out;
 
-    return (char*) resultado;
+    return (char *) resultado;
 }
 
 char *round_key(char *subkey_part1, char *subkey_part2, int round) {
@@ -711,14 +706,19 @@ bool read_file(FILE *file, char *buffer, int buffer_size) {
     }
 
     if (!feof(file)) {
-        char c;
-
+        unsigned char c;
         for (int i = 0; i < buffer_size; ++i) {
             c = fgetc(file);
-            if (c > 0) {
+            if (c != 255) {
                 buffer[i] = c;
             } else {
-                buffer[i] = '\000';
+                if (i==0){
+                    //se chegou ao fim do arquivo sem fazer preenchimentos, retornar false para parar o ciclo
+                    return false;
+                }
+                for (i; i < buffer_size; i++) {
+                    buffer[i] = NULL;
+                }
             }
         }
         return true;
