@@ -777,13 +777,11 @@ void split_key(char *key, char *part1, char *part2) {
 }
 
 void validar_chave(char *key) {
-    int tamanho_leitura = TAMANHOBLOCO + 1;
-    for (int i = 0; i < TAMANHOBLOCO; i++) {
-        if (key[i] == '\0') //pegar a primeira referencia de \0 para saber até onde leu
-            tamanho_leitura = i;
-
-        if (i > tamanho_leitura) //da leitura em diante preencher com 0s
-            key[i] = '\0';
+    if (key != NULL){
+        int tamanho_leitura = strlen(key);
+        for (int i = tamanho_leitura; i < TAMANHOBLOCO; i++) {
+            key[i] = '\000';
+        }
     }
 }
 
