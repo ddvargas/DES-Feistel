@@ -14,6 +14,7 @@
 
 //GLOBAL VARIABLES
 short int trace;
+short int modo_operacao;
 const unsigned short int TABELA_PC1[] = {57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2,
                                          59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36, 63, 55, 47, 39,
                                          31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37,
@@ -195,11 +196,10 @@ int main() {
     char RPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
     char *resultado_f = NULL; //guarda o resultado da função F
     char LNRN[8]; //guarda a junção entre LN e RN após as rodadas
-    short int modo_operacao;
     unsigned char vetor_inicializacao[TAMANHOBLOCO + 1];
 
 
-    printf("\n########## Cifras de Feistel ##########\n\n");
+    printf("\n########## Data Encryption Standart ##########\n\n");
 
     //requisição para mostrar ou não o trace de execução
     printf("Deseja mostrar os detalhes de execução? 1-Sim 0-Não\nEscolha: ");
@@ -211,13 +211,40 @@ int main() {
     }
 
     do {
-        printf("Modo de operação: 1-ECB  2-CFB\nSelecione: ");
+        printf("\nModo de operação: 1-ECB  2-CFB  0-Sair\nSelecione: ");
         scanf("%hu", &modo_operacao);
-        printf("1-Encriptação  2-Decriptação  0-Sair\nEscolha: ");
+        switch (modo_operacao) {
+            case 1:
+                break;
+            case 0:
+                printf("Thau");
+                exit(0);
+            case 2:
+                //CFB
+                printf("Arquivo de vetor de inicialização: ");
+                scanf("%s", nome_arquivo);
+                finicializacao = fopen(strcat(nome_arquivo, ".txt"), "r");
+                if (finicializacao == NULL) {
+                    printf("Erro ao abrir arquivo de inicialização, certifique-se de que seja um .txt e digite "
+                           "apenas o nome");
+                    exit(-1);
+                }
+                //LEITURA E VALIDAÇÕES DO VETOR DE INICALIZAÇÃO
+                if (fgets(vetor_inicializacao, TAMANHOBLOCO, finicializacao) == NULL) {
+                    printf("ERRO - Erro na leitura do vetor de inicialização\n");
+                    exit(-1);
+                }
+                validar_chave(vetor_inicializacao);//passa pelo mesmo processo de validação da chave
+                break;
+            default:
+                printf("Modo operação inválida!\nModo de operação padrão (ECB)\n");
+                modo_operacao = 1;
+        }
+        printf("1-Encriptação  2-Decriptação\nEscolha: ");
         scanf("%hu", &menu_principal);
         switch (menu_principal) {
             case 2:
-                printf("\nArquivo de cifra: ");
+                printf("Arquivo de cifra: ");
                 scanf("%s", nome_arquivo);
                 fflush(stdin);
                 fplaintext = fopen(strcat(nome_arquivo, ".txt"), "r");
@@ -236,7 +263,7 @@ int main() {
                 }
                 break;
             case 1:
-                printf("\nArquivo de plaintext: ");
+                printf("Arquivo de plaintext: ");
                 scanf("%s", nome_arquivo);
                 fflush(stdin);
                 fplaintext = fopen(strcat(nome_arquivo, ".txt"), "r");
@@ -253,9 +280,6 @@ int main() {
                     exit(-1);
                 }
                 break;
-            case 0:
-                printf("\nTchau\n");
-                exit(0);
             default:
                 printf("Opção inválida\nOpção padrão (encriptação)\n");
                 printf("\nArquivo de plaintext: ");
@@ -276,25 +300,6 @@ int main() {
                 }
         }
 
-        switch (modo_operacao) {
-            case 1:
-                break;
-            case 2:
-                //CFB
-                printf("Arquivo de vetor de inicialização: ");
-                scanf("%s", nome_arquivo);
-                finicializacao = fopen(strcat(nome_arquivo, ".txt"), "r");
-                if (finicializacao == NULL) {
-                    printf("Erro ao abrir arquivo de inicialização, certifique-se de que seja um .txt e digite "
-                           "apenas o nome");
-                    exit(-1);
-                }
-                break;
-            default:
-                printf("Modo operação inválida!\nModo de operação padrão (ECB)\n");
-                modo_operacao = 1;
-        }
-
 
         printf("Arquivo de chave: ");
         scanf("%s", nome_arquivo);
@@ -311,19 +316,8 @@ int main() {
         }
         validar_chave(key);
         if (trace) {
-            printf("Chave lida: (%s) ", key);
+            printf("\n\nChave lida: (%s) ", key);
             printbits(key, TAMANHOBLOCO);
-        }
-
-        //LEITURA E VALIDAÇÕES DO VETOR DE INICALIZAÇÃO
-        if (fgets(vetor_inicializacao, TAMANHOBLOCO, finicializacao) == NULL) {
-            printf("ERRO - Erro na leitura do vetor de inicialização\n");
-            exit(-1);
-        }
-        validar_chave(vetor_inicializacao);//passa pelo mesmo processo de validação da chave
-        if (trace) {
-            printf("Vetor Inicialização lido: (%s) ", vetor_inicializacao);
-            printbits(vetor_inicializacao, TAMANHOBLOCO);
         }
 
         //gerar subkey
@@ -333,6 +327,10 @@ int main() {
         subkey(key, subchave);
         split_key(subchave, subchave_pt1, subchave_pt2);
         if (trace) {
+            if (modo_operacao == 2) {
+                printf("Vetor de inicialização (%s): ", vetor_inicializacao);
+                printbits(vetor_inicializacao, 8);
+            }
             printf("Subchave: ");
             printbits(subchave, 7);
             printf("Parte 1: ");
@@ -344,6 +342,13 @@ int main() {
         //gerar subchaves de rodada
         for (int i = 0; i < NUM_RODADAS; ++i) {
             roundkey[i] = round_key(subchave_pt1, subchave_pt2, i);
+        }
+
+        if (trace) {
+            if (menu_principal == 2)
+                printf("\nINICIANDO DECRIPTAÇÃO\n");
+            else
+                printf("\nINICIANDO ENCRIPTAÇÃO\n");
         }
 
         //LER ARQUIVO A SER ENCRIPTADO
@@ -412,14 +417,8 @@ int main() {
                     roundkey_count = menu_principal == 2 ? NUM_RODADAS - 1 : 0;
             }
 
-            if (trace) {
-                if (menu_principal == 2)
-                    printf("\nINICIANDO DECRIPTAÇÃO");
-                else
-                    printf("\nINICIANDO ENCRIPTAÇÃO");
-            }
             for (int i = 0; i < NUM_RODADAS; i++) {
-                if (trace)
+                if (trace && modo_operacao == 1)
                     printf("\nRODADA %d\n", i);
                 if (i == 0) {
                     for (int j = 0; j < 4; ++j) {
@@ -432,7 +431,7 @@ int main() {
                         RRodada[j] = RPRodada[j];
                     }
                 }
-                if (trace) {
+                if (trace && modo_operacao == 1) {
                     printf("RRodada: ");
                     printbits(RRodada, 4);
                     printf("LRodada: ");
@@ -447,13 +446,14 @@ int main() {
                     RPRodada[j] = resultado_f[j] ^ LRodada[j];
                 }
 
-                if (trace && i < 15) {
+                if (trace && i < 15 && modo_operacao == 1) {
                     printf("Left próx rodada: ");
                     printbits(LPRodada, 4);
                     printf("Right próx rodada: ");
                     printbits(RPRodada, 4);
                 }
                 free(resultado_f);
+                //atualizar contador das chaves a serem usadas
                 switch (modo_operacao) {
                     case 1:
                         if (menu_principal == 2) {
@@ -483,9 +483,17 @@ int main() {
             permutar(LNRN, 8, 0);
 
             if (trace) {
-                printf("\nBloco encriptado: ");
-                printbits(LNRN, 8);
-                printf("\n\n");
+                switch (modo_operacao) {
+                    case 1:
+                        printf("\nBloco encriptado: ");
+                        printbits(LNRN, 8);
+                        printf("\n");
+                        break;
+                    case 2:
+                        printf("\nFluxo gerado: ");
+                        printbits(LNRN, 8);
+                        break;
+                }
             }
 
             switch (modo_operacao) {
@@ -501,12 +509,25 @@ int main() {
                             LNRN[i] = LNRN[i] ^ plaintext[i];
                             vetor_inicializacao[i] = plaintext[i];
                         }
+                        if (trace) {
+                            printf("Fluxo + cifra: ");
+                            printbits(LNRN, 8);
+                            printf("Vetor inicialização próximo bloco: ");
+                            printbits(vetor_inicializacao, 8);
+                        }
                     } else {
                         for (int i = 0; i < TAMANHOBLOCO; ++i) {
                             LNRN[i] = LNRN[i] ^ plaintext[i];
                             vetor_inicializacao[i] = LNRN[i];
                         }
+                        if (trace) {
+                            printf("Fluxo + plaintext: ");
+                            printbits(LNRN, 8);
+                            printf("Vetor inicialização próximo bloco: ");
+                            printbits(vetor_inicializacao, 8);
+                        }
                     }
+
                     write_file(fcifra, LNRN, 8);
                     break;
                 default:
@@ -516,7 +537,7 @@ int main() {
 
         }
 
-        printf("Sucesso!\n");
+        printf("\nSucesso!\n");
 
         //liberar memórias e
         for (int i = 0; i < NUM_RODADAS; ++i) {
@@ -634,7 +655,7 @@ char *funcao_feistel(char *RRodada, char *round_key) {
         }
 
     }
-    if (trace) {
+    if (trace && modo_operacao == 1) {
         printf("Função de Feistel\n");
         printf("Lado direito expandido: ");
         printbits(expansao, 6);
@@ -646,7 +667,7 @@ char *funcao_feistel(char *RRodada, char *round_key) {
     }
 
     resultado = SBOXES(expansao);
-    if (trace) {
+    if (trace && modo_operacao == 1) {
         printf("Lado direito XOR subchave: ");
         printbits(expansao, 6);
         printf("Resultado SBOXES: ");
@@ -654,7 +675,7 @@ char *funcao_feistel(char *RRodada, char *round_key) {
     }
 
     permutar(resultado, 4, 2);
-    if (trace) {
+    if (trace && modo_operacao == 1) {
         printf("Resultado após PBOX: ");
         printbits(resultado, 4);
     }
