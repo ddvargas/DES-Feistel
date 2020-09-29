@@ -34,7 +34,7 @@ dentro de um while até que não exista mais texto{
         LNPRodada = RRodada
         RNPRodada = LRodada ^ FuncaoF(RRodada, subchave)
     }
-    Juntar LRodada e RRodada
+    Juntar LRodada e RRodada trocando as ordens
     Resultado = Fazer a permutação final deles de acordo com a tabela IPINVERSA
     Salvar o Resultado no arquivo de saída
 }
