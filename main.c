@@ -411,9 +411,7 @@ void write_file(FILE *file, unsigned char *text, int qtd){
     }
 
     for (int i = 0; i < qtd; ++i) {
-        if (text[i] != '\000'){
             fputc(text[i], file);
-        }
     }
 }
 
