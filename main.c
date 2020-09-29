@@ -196,7 +196,7 @@ int main() {
     char *resultado_f = NULL; //guarda o resultado da função F
     char LNRN[8]; //guarda a junção entre LN e RN após as rodadas
     short int modo_operacao;
-    unsigned char vetor_inicializacao[TAMANHOBLOCO+1];
+    unsigned char vetor_inicializacao[TAMANHOBLOCO + 1];
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -284,7 +284,7 @@ int main() {
                 printf("Arquivo de vetor de inicialização: ");
                 scanf("%s", nome_arquivo);
                 finicializacao = fopen(strcat(nome_arquivo, ".txt"), "r");
-                if (finicializacao == NULL){
+                if (finicializacao == NULL) {
                     printf("Erro ao abrir arquivo de inicialização, certifique-se de que seja um .txt e digite "
                            "apenas o nome");
                     exit(-1);
@@ -316,7 +316,7 @@ int main() {
         }
 
         //LEITURA E VALIDAÇÕES DO VETOR DE INICALIZAÇÃO
-        if (fgets(vetor_inicializacao, TAMANHOBLOCO, finicializacao) == NULL){
+        if (fgets(vetor_inicializacao, TAMANHOBLOCO, finicializacao) == NULL) {
             printf("ERRO - Erro na leitura do vetor de inicialização\n");
             exit(-1);
         }
@@ -385,6 +385,7 @@ int main() {
                     RBloco[1] = vetor_inicializacao[5];
                     RBloco[2] = vetor_inicializacao[6];
                     RBloco[3] = vetor_inicializacao[7];
+                    roundkey_count = 0;
                     break;
                 default:
                     //ECB
@@ -410,7 +411,6 @@ int main() {
                     //iniciar contador da ordem das chaves
                     roundkey_count = menu_principal == 2 ? NUM_RODADAS - 1 : 0;
             }
-
 
             if (trace) {
                 if (menu_principal == 2)
@@ -454,11 +454,19 @@ int main() {
                     printbits(RPRodada, 4);
                 }
                 free(resultado_f);
-                if (menu_principal == 2) {
-                    roundkey_count--;
-                } else {
-                    roundkey_count++;
+                switch (modo_operacao) {
+                    case 1:
+                        if (menu_principal == 2) {
+                            roundkey_count--;
+                        } else {
+                            roundkey_count++;
+                        }
+                        break;
+                    case 2:
+                        roundkey_count++;
+                        break;
                 }
+
             }
 
             //juntar LN e RN após as rodadas
@@ -488,15 +496,21 @@ int main() {
                     break;
                 case 2:
                     //CFB
-                    for (int i = 0; i < TAMANHOBLOCO; ++i) {
-                        LNRN[i] = LNRN[i] ^ plaintext[i];
-                        vetor_inicializacao[i] = LNRN[i];
+                    if (menu_principal == 2) {
+                        for (int i = 0; i < TAMANHOBLOCO; ++i) {
+                            LNRN[i] = LNRN[i] ^ plaintext[i];
+                            vetor_inicializacao[i] = plaintext[i];
+                        }
+                    } else {
+                        for (int i = 0; i < TAMANHOBLOCO; ++i) {
+                            LNRN[i] = LNRN[i] ^ plaintext[i];
+                            vetor_inicializacao[i] = LNRN[i];
+                        }
                     }
                     write_file(fcifra, LNRN, 8);
                     break;
                 default:
                     //ECB
-                    //gravar
                     write_file(fcifra, LNRN, 8);
             }
 
@@ -515,13 +529,13 @@ int main() {
 
 }
 
-void write_file(FILE *file, unsigned char *text, int qtd){
-    if (file == NULL || text == NULL){
+void write_file(FILE *file, unsigned char *text, int qtd) {
+    if (file == NULL || text == NULL) {
         return;
     }
 
     for (int i = 0; i < qtd; ++i) {
-            fputc(text[i], file);
+        fputc(text[i], file);
     }
 }
 
@@ -838,7 +852,7 @@ bool read_file(FILE *file, char *buffer, int buffer_size) {
             if (!feof(file)) {
                 buffer[i] = c;
             } else {
-                if (i==0){
+                if (i == 0) {
                     //se chegou ao fim do arquivo sem fazer preenchimentos, retornar false para parar o ciclo
                     return false;
                 }
@@ -887,7 +901,7 @@ void split_key(char *key, char *part1, char *part2) {
 }
 
 void validar_chave(char *key) {
-    if (key != NULL){
+    if (key != NULL) {
         int tamanho_leitura = strlen(key);
         for (int i = tamanho_leitura; i < TAMANHOBLOCO; i++) {
             key[i] = '\000';
