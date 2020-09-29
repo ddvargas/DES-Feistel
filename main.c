@@ -178,6 +178,7 @@ int main() {
     FILE *fkey;
     FILE *fplaintext;
     FILE *fcifra;
+    FILE *finicializacao;
     char nome_arquivo[NOMEARQUIVO];
     short int menu_principal;
     int roundkey_count; //contador do numero da subchave a ser usada na rodada, se inversa ou não
@@ -194,6 +195,8 @@ int main() {
     char RPRodada[4]; //guarda os valores calculados a serem usados na próxima rodada para a parte direita do bloco sendo encriptado
     char *resultado_f = NULL; //guarda o resultado da função F
     char LNRN[8]; //guarda a junção entre LN e RN após as rodadas
+    short int modo_operacao;
+    unsigned char vetor_inicializacao[TAMANHOBLOCO+1];
 
 
     printf("\n########## Cifras de Feistel ##########\n\n");
@@ -208,6 +211,8 @@ int main() {
     }
 
     do {
+        printf("Modo de operação: 1-ECB  2-CFB\nSelecione: ");
+        scanf("%hu", &modo_operacao);
         printf("1-Encriptação  2-Decriptação  0-Sair\nEscolha: ");
         scanf("%hu", &menu_principal);
         switch (menu_principal) {
@@ -252,7 +257,42 @@ int main() {
                 printf("\nTchau\n");
                 exit(0);
             default:
-                printf("Opção inválida\n");
+                printf("Opção inválida\nOpção padrão (encriptação)\n");
+                printf("\nArquivo de plaintext: ");
+                scanf("%s", nome_arquivo);
+                fflush(stdin);
+                fplaintext = fopen(strcat(nome_arquivo, ".txt"), "r");
+                if (fplaintext == NULL) {
+                    printf("Erro ao abrir arquivo de plaintext, certifique-se de que seja um .txt e digite apenas o nome\n");
+                    exit(-1);
+                }
+
+                printf("Defina o nome do arquivo de cifra: ");
+                scanf("%s", nome_arquivo);
+                fcifra = fopen(strcat(nome_arquivo, ".txt"), "w");
+                if (fcifra == NULL) {
+                    printf("Erro ao criar arquivo de cifra\n");
+                    exit(-1);
+                }
+        }
+
+        switch (modo_operacao) {
+            case 1:
+                break;
+            case 2:
+                //CFB
+                printf("Arquivo de vetor de inicialização: ");
+                scanf("%s", nome_arquivo);
+                finicializacao = fopen(strcat(nome_arquivo, ".txt"), "r");
+                if (finicializacao == NULL){
+                    printf("Erro ao abrir arquivo de inicialização, certifique-se de que seja um .txt e digite "
+                           "apenas o nome");
+                    exit(-1);
+                }
+                break;
+            default:
+                printf("Modo operação inválida!\nModo de operação padrão (ECB)\n");
+                modo_operacao = 1;
         }
 
 
@@ -273,6 +313,17 @@ int main() {
         if (trace) {
             printf("Chave lida: (%s) ", key);
             printbits(key, TAMANHOBLOCO);
+        }
+
+        //LEITURA E VALIDAÇÕES DO VETOR DE INICALIZAÇÃO
+        if (fgets(vetor_inicializacao, TAMANHOBLOCO, finicializacao) == NULL){
+            printf("ERRO - Erro na leitura do vetor de inicialização\n");
+            exit(-1);
+        }
+        validar_chave(vetor_inicializacao);//passa pelo mesmo processo de validação da chave
+        if (trace) {
+            printf("Vetor Inicialização lido: (%s) ", vetor_inicializacao);
+            printbits(vetor_inicializacao, TAMANHOBLOCO);
         }
 
         //gerar subkey
@@ -297,29 +348,69 @@ int main() {
 
         //LER ARQUIVO A SER ENCRIPTADO
         while (read_file(fplaintext, plaintext, TAMANHOBLOCO)) {
-            roundkey_count = menu_principal == 2 ? NUM_RODADAS - 1 : 0;
-
-            //Permutar o Plaintext
-            if (trace) {
-                printf("Plaintext: ");
-                printbits(plaintext, 8);
+            switch (modo_operacao) {
+                case 1:
+                    //ECB
+                    //Permutar o Plaintext
+                    if (trace) {
+                        printf("Plaintext: ");
+                        printbits(plaintext, 8);
+                    }
+                    permutar(plaintext, 8, 1);
+                    if (trace) {
+                        printf("Plaintext permutado: ");
+                        printbits(plaintext, 8);
+                    }
+                    //quebrar o bloco em 2
+                    LBloco[0] = plaintext[0];
+                    LBloco[1] = plaintext[1];
+                    LBloco[2] = plaintext[2];
+                    LBloco[3] = plaintext[3];
+                    RBloco[0] = plaintext[4];
+                    RBloco[1] = plaintext[5];
+                    RBloco[2] = plaintext[6];
+                    RBloco[3] = plaintext[7];
+                    //iniciar contador da ordem das chaves
+                    roundkey_count = menu_principal == 2 ? NUM_RODADAS - 1 : 0;
+                    break;
+                case 2:
+                    //CFB
+                    //permutar o vetor de inicialização
+                    permutar(vetor_inicializacao, 8, 1);
+                    LBloco[0] = vetor_inicializacao[0];
+                    LBloco[1] = vetor_inicializacao[1];
+                    LBloco[2] = vetor_inicializacao[2];
+                    LBloco[3] = vetor_inicializacao[3];
+                    RBloco[0] = vetor_inicializacao[4];
+                    RBloco[1] = vetor_inicializacao[5];
+                    RBloco[2] = vetor_inicializacao[6];
+                    RBloco[3] = vetor_inicializacao[7];
+                    break;
+                default:
+                    //ECB
+                    //Permutar o Plaintext
+                    if (trace) {
+                        printf("Plaintext: ");
+                        printbits(plaintext, 8);
+                    }
+                    permutar(plaintext, 8, 1);
+                    if (trace) {
+                        printf("Plaintext permutado: ");
+                        printbits(plaintext, 8);
+                    }
+                    //quebrar o bloco em 2
+                    LBloco[0] = plaintext[0];
+                    LBloco[1] = plaintext[1];
+                    LBloco[2] = plaintext[2];
+                    LBloco[3] = plaintext[3];
+                    RBloco[0] = plaintext[4];
+                    RBloco[1] = plaintext[5];
+                    RBloco[2] = plaintext[6];
+                    RBloco[3] = plaintext[7];
+                    //iniciar contador da ordem das chaves
+                    roundkey_count = menu_principal == 2 ? NUM_RODADAS - 1 : 0;
             }
-            permutar(plaintext, 8, 1);
 
-            if (trace) {
-                printf("Plaintext permutado: ");
-                printbits(plaintext, 8);
-            }
-
-            //quebrar o bloco em 2
-            LBloco[0] = plaintext[0];
-            LBloco[1] = plaintext[1];
-            LBloco[2] = plaintext[2];
-            LBloco[3] = plaintext[3];
-            RBloco[0] = plaintext[4];
-            RBloco[1] = plaintext[5];
-            RBloco[2] = plaintext[6];
-            RBloco[3] = plaintext[7];
 
             if (trace) {
                 if (menu_principal == 2)
@@ -388,8 +479,27 @@ int main() {
                 printbits(LNRN, 8);
                 printf("\n\n");
             }
-            //gravar
-            write_file(fcifra, LNRN, 8);
+
+            switch (modo_operacao) {
+                case 1:
+                    //ECB
+                    //gravar
+                    write_file(fcifra, LNRN, 8);
+                    break;
+                case 2:
+                    //CFB
+                    for (int i = 0; i < TAMANHOBLOCO; ++i) {
+                        LNRN[i] = LNRN[i] ^ plaintext[i];
+                        vetor_inicializacao[i] = LNRN[i];
+                    }
+                    write_file(fcifra, LNRN, 8);
+                    break;
+                default:
+                    //ECB
+                    //gravar
+                    write_file(fcifra, LNRN, 8);
+            }
+
         }
 
         printf("Sucesso!\n");
