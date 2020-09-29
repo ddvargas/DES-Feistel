@@ -1,8 +1,8 @@
 # DES (Rede-de-Feistel)
 
-O intuito desse programa é fazer a encriptação em bloco de mensagens de texto utilizando o algoritmo DES ([Data Encription Standart](https://pt.wikipedia.org/wiki/Data_Encryption_Standard)) com o modo de funcionamento ECB ([Eletronic Code Book](https://pt.wikipedia.org/wiki/Modo_de_opera%C3%A7%C3%A3o_(criptografia)#Modo_ECB_(Electronic_CodeBook))). Com a possibilidade de visualizar, passo a passo, os bits dos resultados.
+O intuito desse programa é fazer a encriptação em bloco de mensagens de texto utilizando o algoritmo DES ([Data Encription Standart](https://pt.wikipedia.org/wiki/Data_Encryption_Standard)) com o modo de funcionamento [Eletronic Code Book](https://pt.wikipedia.org/wiki/Modo_de_opera%C3%A7%C3%A3o_(criptografia)#Modo_ECB_(Electronic_CodeBook)) (ECB) e [Cipher FeedBack](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)) (CFB). Com a possibilidade de visualizar, passo a passo, os bits dos resultados.
 
-O usuário entra com arquivos contendo a mensagem e a chave de encriptação e o programa mostra a geração de subchaves, rodadas da Rede de Feistel e encriptação completa dos blocos, gerando um arquivo que contem a cifra. Em caso de decriptação o comportamento é o mesmo, com o usuário fornecendo a cifra e a chave.
+O usuário entra com arquivos contendo a mensagem, a chave de encriptação e, no caso do CFB, o vetor de inicialização e o programa mostra a geração de subchaves, rodadas da Rede de Feistel e encriptação completa dos blocos, gerando um arquivo que contém a cifra. Em caso de decriptação o comportamento é o mesmo, com o usuário fornecendo a cifra, a chave e vetor de inicialização, se necessário.
 
 Algoritmo foi desenvolvido como parte da disciplina de Criptografia para Segurança de Dados do curso de Bacharelado em Sistemas de Informação pela Universidade Federal de Santa Maria - UFSM. Pode ser usado como ferramenta para mostrar o comportamento do DES e as mudanças bit a bit.
 
@@ -13,6 +13,7 @@ Realiza 16 rodadas na Rede de Feistel para garantir uma boa difusão e confusão
 
 As subchaves de rodada são geradas com shifts circulares nas duas subpartes da subchave que foi gerada com uma permutação.
 
+No caso do modo CFB, é usado um vetor de inicialização de 8 bytes, escolhido pelo usuário e o mesmo deve ser usado para o processo de decriptação. Caso seja menor que 8 bytes é feito um padding com 0s.
 
 ## Modo de uso
 
