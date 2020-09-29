@@ -727,7 +727,7 @@ bool read_file(FILE *file, char *buffer, int buffer_size) {
         unsigned char c;
         for (int i = 0; i < buffer_size; ++i) {
             c = fgetc(file);
-            if (c != 255) {
+            if (!feof(file)) {
                 buffer[i] = c;
             } else {
                 if (i==0){
